@@ -1,16 +1,23 @@
+import dotenv from "dotenv";
+dotenv.config(); // ✅ MUST BE FIRST
+
 import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
-import dotenv from "dotenv";
 import fs from "fs";
 import paymentRoutes from "./routes/payment.js";
-
-dotenv.config();
+import pool from "./lib/db.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+/* ======================================
+   DEBUG (IMPORTANT)
+====================================== */
+
+console.log("DATABASE URL:", process.env.DATABASE_URL);
 
 /* ======================================
    PAYMENT ROUTES
@@ -19,7 +26,7 @@ app.use(express.json());
 app.use("/", paymentRoutes);
 
 /* ======================================
-   FILE STORAGE
+   FILE STORAGE (JSON fallback)
 ====================================== */
 
 const DATA_FILE = "./projects.json";
@@ -36,10 +43,7 @@ const loadProjects = () => {
       fs.writeFileSync(DATA_FILE, "[]");
     }
 
-    const data = fs.readFileSync(
-      DATA_FILE,
-      "utf-8"
-    );
+    const data = fs.readFileSync(DATA_FILE, "utf-8");
 
     return JSON.parse(data || "[]");
 
@@ -64,6 +68,35 @@ const saveProjects = (projects) => {
 };
 
 /* ======================================
+   CREATE TABLE (NEON CHECK)
+====================================== */
+
+const createTable = async () => {
+
+  try {
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id BIGSERIAL PRIMARY KEY,
+        title TEXT,
+        prompt TEXT,
+        html TEXT,
+        visibility TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    console.log("✅ Neon database connected");
+
+  } catch (err) {
+
+    console.error("❌ Database error:", err);
+  }
+};
+
+createTable();
+
+/* ======================================
    TEST ROUTE
 ====================================== */
 
@@ -83,14 +116,12 @@ app.post("/generate", async (req, res) => {
     const { prompt } = req.body;
 
     if (!prompt) {
-
       return res.status(400).json({
         error: "Prompt required",
       });
     }
 
     if (!process.env.OPENAI_API_KEY) {
-
       return res.status(500).json({
         error: "Missing API key",
       });
@@ -106,23 +137,19 @@ Return ONLY HTML.
       "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
-
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           model: "gpt-4o",
           temperature: 1,
           max_tokens: 4000,
-
           messages: [
             {
               role: "system",
               content: SYSTEM_PROMPT,
             },
-
             {
               role: "user",
               content: `Create website: ${prompt}`,
@@ -134,8 +161,7 @@ Return ONLY HTML.
 
     const data = await response.json();
 
-    let raw =
-      data?.choices?.[0]?.message?.content || "";
+    let raw = data?.choices?.[0]?.message?.content || "";
 
     raw = raw
       .replace(/```html/gi, "")
@@ -143,12 +169,9 @@ Return ONLY HTML.
       .replace(/<!DOCTYPE[^>]*>/gi, "")
       .trim();
 
-    const match = raw.match(
-      /<html[\s\S]*<\/html>/i
-    );
+    const match = raw.match(/<html[\s\S]*<\/html>/i);
 
     if (!match) {
-
       return res.status(500).json({
         error: "Invalid HTML output",
       });
@@ -169,10 +192,10 @@ Return ONLY HTML.
 });
 
 /* ======================================
-   SAVE PROJECT
+   SAVE PROJECT (NEON DB VERSION)
 ====================================== */
 
-app.post("/save-project", (req, res) => {
+app.post("/save-project", async (req, res) => {
 
   try {
 
@@ -183,66 +206,23 @@ app.post("/save-project", (req, res) => {
       visibility
     } = req.body;
 
-    visibility = String(
-      visibility || "private"
-    )
+    visibility = String(visibility || "private")
       .trim()
       .toLowerCase();
 
-    const projects = loadProjects();
-
-    const baseProject = {
-      id: Date.now(),
-      title: title || prompt,
-      prompt,
-      html,
-      createdAt: new Date().toISOString(),
-    };
-
-    let newProjects = [];
-
-    if (visibility === "private") {
-
-      newProjects.push({
-        ...baseProject,
-        visibility: "private",
-      });
-    }
-
-    else if (visibility === "public") {
-
-      newProjects.push({
-        ...baseProject,
-        visibility: "public",
-      });
-    }
-
-    else if (visibility === "both") {
-
-      newProjects.push({
-        ...baseProject,
-        id: Date.now(),
-        visibility: "private",
-      });
-
-      newProjects.push({
-        ...baseProject,
-        id: Date.now() + 1,
-        visibility: "public",
-      });
-    }
-
-    else {
-
-      newProjects.push({
-        ...baseProject,
-        visibility: "private",
-      });
-    }
-
-    projects.unshift(...newProjects);
-
-    saveProjects(projects);
+    await pool.query(
+      `
+      INSERT INTO projects
+      (title, prompt, html, visibility)
+      VALUES ($1, $2, $3, $4)
+      `,
+      [
+        title || prompt,
+        prompt,
+        html,
+        visibility
+      ]
+    );
 
     res.json({
       success: true,
@@ -262,66 +242,84 @@ app.post("/save-project", (req, res) => {
    MY PROJECTS
 ====================================== */
 
-app.get("/my-projects", (req, res) => {
+app.get("/my-projects", async (req, res) => {
 
-  const projects = loadProjects();
+  try {
 
-  const data = projects
-    .filter(
-      (p) =>
-        (p.visibility || "")
-          .toLowerCase() === "private"
-    )
-    .sort((a, b) => b.id - a.id);
+    const result = await pool.query(`
+      SELECT *
+      FROM projects
+      WHERE visibility='private'
+      ORDER BY id DESC
+    `);
 
-  res.json(data);
+    res.json(result.rows);
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Load failed",
+    });
+  }
 });
 
 /* ======================================
    COMMUNITY PROJECTS
 ====================================== */
 
-app.get(
-  "/community-projects",
-  (req, res) => {
+app.get("/community-projects", async (req, res) => {
 
-    const projects = loadProjects();
+  try {
 
-    const data = projects
-      .filter(
-        (p) =>
-          (p.visibility || "")
-            .toLowerCase() === "public"
-      )
-      .sort((a, b) => b.id - a.id);
+    const result = await pool.query(`
+      SELECT *
+      FROM projects
+      WHERE visibility='public'
+      ORDER BY id DESC
+    `);
 
-    res.json(data);
+    res.json(result.rows);
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Load failed",
+    });
   }
-);
+});
 
 /* ======================================
    DELETE PROJECT
 ====================================== */
 
-app.delete(
-  "/delete-project/:id",
-  (req, res) => {
+app.delete("/delete-project/:id", async (req, res) => {
 
-    const id = Number(req.params.id);
+  try {
 
-    let projects = loadProjects();
+    const id = req.params.id;
 
-    projects = projects.filter(
-      (p) => p.id !== id
-    );
-
-    saveProjects(projects);
+    await pool.query(`
+      DELETE FROM projects
+      WHERE id=$1
+    `, [id]);
 
     res.json({
       success: true,
     });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Delete failed",
+    });
   }
-);
+});
 
 /* ======================================
    START SERVER
@@ -331,7 +329,6 @@ const PORT = 5000;
 
 app.listen(PORT, () => {
 
-  console.log(
-    `🚀 Server running http://localhost:${PORT}`
-  );
+  console.log(`🚀 Server running http://localhost:${PORT}`);
+
 });
