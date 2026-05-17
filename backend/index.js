@@ -325,7 +325,7 @@ app.delete("/delete-project/:id", async (req, res) => {
    START SERVER
 ====================================== */
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
 
