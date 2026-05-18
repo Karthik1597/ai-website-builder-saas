@@ -109,7 +109,7 @@ Return full updated professional HTML website.
   };
 
   /* ============================
-     SAVE PROJECT
+     SAVE PROJECT (FIXED ONLY HERE)
   ============================ */
 
   const handleSave = async (visibility) => {
@@ -135,7 +135,8 @@ Return full updated professional HTML website.
 
       const data = await res.json();
 
-      if (!data.success) {
+      // FIX: safe check (prevents false failures)
+      if (data?.success === false) {
         toast.error("Save failed");
         setSaving(false);
         return;
@@ -172,10 +173,7 @@ Return full updated professional HTML website.
 
         <div className="ai-header">
           <h1>AI Website Preview</h1>
-
-          <p>
-            Your generated website preview below.
-          </p>
+          <p>Your generated website preview below.</p>
         </div>
 
         <div
@@ -185,15 +183,13 @@ Return full updated professional HTML website.
             borderRadius: "20px",
             overflow: "hidden",
             background: "#0f172a",
-            boxShadow:
-              "0 30px 80px rgba(0,0,0,0.6)",
+            boxShadow: "0 30px 80px rgba(0,0,0,0.6)",
           }}
         >
 
           <iframe
             title="AI Preview"
             sandbox="allow-scripts allow-same-origin"
-
             style={{
               width: "100%",
               height: "85vh",
@@ -251,26 +247,17 @@ Return full updated professional HTML website.
             padding: "25px",
             borderRadius: "18px",
             background: "#111827",
-            boxShadow:
-              "0 20px 60px rgba(0,0,0,0.6)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
           }}
         >
 
-          <h3
-            style={{
-              marginBottom: "15px",
-              fontSize: "18px"
-            }}
-          >
+          <h3 style={{ marginBottom: "15px", fontSize: "18px" }}>
             Edit Website
           </h3>
 
           <textarea
             value={editInstruction}
-            onChange={(e) =>
-              setEditInstruction(e.target.value)
-            }
-
+            onChange={(e) => setEditInstruction(e.target.value)}
             style={{
               width: "100%",
               minHeight: "120px",
@@ -287,7 +274,6 @@ Return full updated professional HTML website.
           <button
             onClick={handleEdit}
             disabled={loading}
-
             style={{
               marginTop: "18px",
               padding: "12px 28px",
@@ -295,8 +281,7 @@ Return full updated professional HTML website.
               border: "none",
               fontWeight: "600",
               cursor: "pointer",
-              background:
-                "linear-gradient(135deg,#6366f1,#8b5cf6)",
+              background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
               color: "#fff",
             }}
           >
@@ -305,15 +290,14 @@ Return full updated professional HTML website.
 
         </div>
 
-        {/* SAVE (UNCHANGED) */}
+        {/* SAVE (UNCHANGED UI) */}
         <div
           style={{
             marginTop: "35px",
             padding: "25px",
             borderRadius: "18px",
             background: "#111827",
-            boxShadow:
-              "0 20px 60px rgba(0,0,0,0.6)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
             display: "flex",
             gap: "20px",
             flexWrap: "wrap",
@@ -323,15 +307,13 @@ Return full updated professional HTML website.
           <button
             onClick={() => handleSave("private")}
             disabled={saving}
-
             style={{
               padding: "12px 28px",
               borderRadius: "12px",
               border: "none",
               fontWeight: "600",
               cursor: "pointer",
-              background:
-                "linear-gradient(135deg,#10b981,#059669)",
+              background: "linear-gradient(135deg,#10b981,#059669)",
               color: "#fff",
             }}
           >
@@ -341,15 +323,13 @@ Return full updated professional HTML website.
           <button
             onClick={() => handleSave("public")}
             disabled={saving}
-
             style={{
               padding: "12px 28px",
               borderRadius: "12px",
               border: "none",
               fontWeight: "600",
               cursor: "pointer",
-              background:
-                "linear-gradient(135deg,#f59e0b,#ef4444)",
+              background: "linear-gradient(135deg,#f59e0b,#ef4444)",
               color: "#fff",
             }}
           >
@@ -370,14 +350,8 @@ Return full updated professional HTML website.
     <div className="ai-builder container">
 
       <div className="ai-header">
-
         <h1>AI Website Builder</h1>
-
-        <p>
-          Describe your idea — AI builds
-          a complete professional website.
-        </p>
-
+        <p>Describe your idea — AI builds a complete professional website.</p>
       </div>
 
       <div className="ai-prompt-box">
