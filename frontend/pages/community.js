@@ -1,5 +1,9 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+
+const API = "https://ai-website-builder-saas.onrender.com";
 
 export default function CommunityPage() {
 
@@ -7,24 +11,19 @@ export default function CommunityPage() {
   const [active, setActive] = useState(null);
   const [menu, setMenu] = useState(false);
 
+  const getDate = (p) => p.created_at || p.createdAt;
+
   const fetchProjects = async () => {
 
     try {
 
-      const res = await fetch(
-        "https://ai-website-builder-saas.onrender.com/community-projects"
-      );
-
+      const res = await fetch(`${API}/community-projects`);
       const data = await res.json();
-
-      console.log("Community Projects:", data);
 
       setProjects(Array.isArray(data) ? data : []);
 
     } catch (err) {
-
       console.error(err);
-
       toast.error("Failed to load projects");
     }
   };
@@ -37,47 +36,38 @@ export default function CommunityPage() {
 
     try {
 
-      await fetch(
-        `https://ai-website-builder-saas.onrender.com/delete-project/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      await fetch(`${API}/delete-project/${id}`, {
+        method: "DELETE",
+      });
 
       toast.success("Deleted");
-
       setMenu(false);
-
       setActive(null);
-
       fetchProjects();
 
     } catch (err) {
-
       console.error(err);
-
       toast.error("Delete failed");
     }
   };
 
-  const copyHTML = (html) => {
+  const copyHTML = async (html) => {
 
-    navigator.clipboard.writeText(html);
+    try {
 
-    toast.success("Copied");
+      await navigator.clipboard.writeText(html);
+      toast.success("Copied");
+      setMenu(false);
 
-    setMenu(false);
+    } catch (err) {
+      toast.error("Copy failed");
+    }
   };
 
-  if (active)
+  if (active) {
 
     return (
-      <div
-        style={{
-          position: "relative",
-          height: "100vh"
-        }}
-      >
+      <div style={{ position: "relative", height: "100vh" }}>
 
         <div
           onClick={() => setMenu(!menu)}
@@ -110,22 +100,14 @@ export default function CommunityPage() {
 
             <div
               onClick={() => copyHTML(active.html)}
-              style={{
-                padding: "10px 15px",
-                cursor: "pointer",
-                color: "white"
-              }}
+              style={{ padding: "10px 15px", cursor: "pointer", color: "white" }}
             >
               Copy
             </div>
 
             <div
               onClick={() => deleteProject(active.id)}
-              style={{
-                padding: "10px 15px",
-                cursor: "pointer",
-                color: "white"
-              }}
+              style={{ padding: "10px 15px", cursor: "pointer", color: "white" }}
             >
               Delete
             </div>
@@ -134,31 +116,19 @@ export default function CommunityPage() {
         )}
 
         <iframe
-          style={{
-            width: "100%",
-            height: "100%",
-            border: "none"
-          }}
+          style={{ width: "100%", height: "100%", border: "none" }}
           srcDoc={`
             <style>
-              html,body{
-                margin:0;
-                padding:0;
-                overflow:auto;
-                scrollbar-width:none;
-              }
-
-              ::-webkit-scrollbar{
-                display:none;
-              }
+              html,body{margin:0;padding:0;overflow:auto;}
+              ::-webkit-scrollbar{display:none;}
             </style>
-
             ${active.html}
           `}
         />
 
       </div>
     );
+  }
 
   return (
     <div className="project-grid">
@@ -176,11 +146,9 @@ export default function CommunityPage() {
           </div>
 
           <div className="project-date">
-            {
-              p.created_at
-                ? new Date(p.created_at).toLocaleDateString()
-                : "No Date"
-            }
+            {getDate(p)
+              ? new Date(getDate(p)).toLocaleDateString()
+              : "No Date"}
           </div>
 
         </div>

@@ -1,5 +1,9 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
+
+const API = "https://ai-website-builder-saas.onrender.com";
 
 export default function ProjectsPage() {
 
@@ -7,24 +11,19 @@ export default function ProjectsPage() {
   const [active, setActive] = useState(null);
   const [menu, setMenu] = useState(false);
 
+  const getDate = (p) => p.created_at || p.createdAt;
+
   const fetchProjects = async () => {
 
     try {
 
-      const res = await fetch(
-        "https://ai-website-builder-saas.onrender.com/my-projects"
-      );
-
+      const res = await fetch(`${API}/my-projects`);
       const data = await res.json();
-
-      console.log("My Projects:", data);
 
       setProjects(Array.isArray(data) ? data : []);
 
     } catch (err) {
-
       console.error(err);
-
       toast.error("Failed to load projects");
     }
   };
@@ -37,47 +36,59 @@ export default function ProjectsPage() {
 
     try {
 
-      await fetch(
-        `https://ai-website-builder-saas.onrender.com/delete-project/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
+      await fetch(`${API}/delete-project/${id}`, {
+        method: "DELETE",
+      });
 
       toast.success("Deleted");
-
       setMenu(false);
-
       setActive(null);
-
       fetchProjects();
 
     } catch (err) {
-
       console.error(err);
-
       toast.error("Delete failed");
     }
   };
 
-  const copyHTML = (html) => {
+  const copyHTML = async (html) => {
 
-    navigator.clipboard.writeText(html);
+    try {
 
-    toast.success("Copied");
+      await navigator.clipboard.writeText(html);
+      toast.success("Copied");
+      setMenu(false);
 
-    setMenu(false);
+    } catch (err) {
+      toast.error("Copy failed");
+    }
   };
 
-  if (active)
+  if (active) {
 
     return (
-      <div
-        style={{
-          position: "relative",
-          height: "100vh"
-        }}
-      >
+      <div style={{ position: "relative", height: "100vh" }}>
+
+        <button
+          onClick={() => {
+            setActive(null);
+            setMenu(false);
+          }}
+          style={{
+            position: "absolute",
+            top: 15,
+            left: 15,
+            zIndex: 1000,
+            padding: "10px 18px",
+            border: "none",
+            borderRadius: "10px",
+            background: "#111827",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Back
+        </button>
 
         <div
           onClick={() => setMenu(!menu)}
@@ -85,9 +96,8 @@ export default function ProjectsPage() {
             position: "absolute",
             top: 15,
             right: 20,
-            fontSize: 22,
+            fontSize: 28,
             cursor: "pointer",
-            color: "#444",
             zIndex: 1000
           }}
         >
@@ -98,34 +108,26 @@ export default function ProjectsPage() {
           <div
             style={{
               position: "absolute",
-              top: 45,
+              top: 50,
               right: 20,
-              background: "#1f2937",
-              borderRadius: 8,
+              background: "#111827",
+              borderRadius: "12px",
               overflow: "hidden",
               zIndex: 1000,
-              minWidth: 110
+              minWidth: "140px"
             }}
           >
 
             <div
               onClick={() => copyHTML(active.html)}
-              style={{
-                padding: "10px 15px",
-                cursor: "pointer",
-                color: "white"
-              }}
+              style={{ padding: "12px 16px", color: "#fff", cursor: "pointer" }}
             >
-              Copy
+              Copy HTML
             </div>
 
             <div
               onClick={() => deleteProject(active.id)}
-              style={{
-                padding: "10px 15px",
-                cursor: "pointer",
-                color: "white"
-              }}
+              style={{ padding: "12px 16px", color: "#ff4d4f", cursor: "pointer" }}
             >
               Delete
             </div>
@@ -134,54 +136,60 @@ export default function ProjectsPage() {
         )}
 
         <iframe
+          title="preview"
+          srcDoc={active.html}
           style={{
             width: "100%",
             height: "100%",
-            border: "none"
+            border: "none",
+            background: "#fff"
           }}
-          srcDoc={`
-            <style>
-              html,body{
-                margin:0;
-                padding:0;
-                overflow:auto;
-                scrollbar-width:none;
-              }
-
-              ::-webkit-scrollbar{
-                display:none;
-              }
-            </style>
-
-            ${active.html}
-          `}
         />
 
       </div>
     );
+  }
 
   return (
-    <div className="project-grid">
+    <div
+      style={{
+        padding: "30px",
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+        gap: "20px",
+      }}
+    >
+
+      {projects.length === 0 && <h2>No Saved Projects</h2>}
 
       {projects.map((p) => (
 
         <div
           key={p.id}
-          className="project-card"
           onClick={() => setActive(p)}
+          style={{
+            padding: "20px",
+            borderRadius: "18px",
+            background: "#111827",
+            color: "#fff",
+            cursor: "pointer",
+          }}
         >
 
-          <div className="project-title">
-            {p.title || p.prompt}
-          </div>
+          <h3>{p.title}</h3>
 
-          <div className="project-date">
-            {
-              p.created_at
-                ? new Date(p.created_at).toLocaleDateString()
-                : "No Date"
-            }
-          </div>
+          <p style={{ opacity: 0.7, fontSize: "14px" }}>
+            {getDate(p)
+              ? new Date(getDate(p)).toLocaleString()
+              : "No Date"}
+          </p>
+
+          <p style={{
+            marginTop: "10px",
+            color: p.visibility === "public" ? "#f59e0b" : "#10b981"
+          }}>
+            {p.visibility}
+          </p>
 
         </div>
 
