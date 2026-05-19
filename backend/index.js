@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config(); // ✅ MUST BE FIRST
+dotenv.config();
 
 import express from "express";
 import fetch from "node-fetch";
@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 /* ======================================
-   DEBUG (IMPORTANT)
+   DEBUG
 ====================================== */
 
 console.log("DATABASE URL:", process.env.DATABASE_URL);
@@ -26,7 +26,7 @@ console.log("DATABASE URL:", process.env.DATABASE_URL);
 app.use("/", paymentRoutes);
 
 /* ======================================
-   FILE STORAGE (JSON fallback)
+   FILE STORAGE
 ====================================== */
 
 const DATA_FILE = "./projects.json";
@@ -68,7 +68,7 @@ const saveProjects = (projects) => {
 };
 
 /* ======================================
-   CREATE TABLE (NEON CHECK)
+   CREATE TABLE
 ====================================== */
 
 const createTable = async () => {
@@ -130,7 +130,17 @@ app.post("/generate", async (req, res) => {
     const SYSTEM_PROMPT = `
 You are an elite frontend engineer.
 
-Return ONLY HTML.
+Generate a COMPLETE modern responsive website.
+
+Rules:
+- Return ONLY raw HTML
+- Do NOT use markdown
+- Do NOT use triple backticks
+- Include all CSS inside <style>
+- Include all JS inside <script>
+- Make UI modern and professional
+- Use responsive layout
+- Use beautiful sections
 `;
 
     const response = await fetch(
@@ -143,7 +153,7 @@ Return ONLY HTML.
         },
         body: JSON.stringify({
           model: "gpt-4o",
-          temperature: 1,
+          temperature: 0.8,
           max_tokens: 4000,
           messages: [
             {
@@ -152,7 +162,7 @@ Return ONLY HTML.
             },
             {
               role: "user",
-              content: `Create website: ${prompt}`,
+              content: prompt,
             },
           ],
         }),
@@ -161,7 +171,13 @@ Return ONLY HTML.
 
     const data = await response.json();
 
-    let raw = data?.choices?.[0]?.message?.content || "";
+    console.log(
+      "OPENAI RESPONSE:",
+      JSON.stringify(data, null, 2)
+    );
+
+    let raw =
+      data?.choices?.[0]?.message?.content || "";
 
     raw = raw
       .replace(/```html/gi, "")
@@ -169,16 +185,29 @@ Return ONLY HTML.
       .replace(/<!DOCTYPE[^>]*>/gi, "")
       .trim();
 
-    const match = raw.match(/<html[\s\S]*<\/html>/i);
+    // AUTO FIX HTML
 
-    if (!match) {
-      return res.status(500).json({
-        error: "Invalid HTML output",
-      });
+    if (!raw.includes("<html")) {
+
+      raw = `
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          />
+        </head>
+
+        <body>
+          ${raw}
+        </body>
+      </html>
+      `;
     }
 
     res.json({
-      html: match[0],
+      html: raw,
     });
 
   } catch (err) {
@@ -192,7 +221,7 @@ Return ONLY HTML.
 });
 
 /* ======================================
-   SAVE PROJECT (NEON DB VERSION)
+   SAVE PROJECT
 ====================================== */
 
 app.post("/save-project", async (req, res) => {
@@ -206,7 +235,9 @@ app.post("/save-project", async (req, res) => {
       visibility
     } = req.body;
 
-    visibility = String(visibility || "private")
+    visibility = String(
+      visibility || "private"
+    )
       .trim()
       .toLowerCase();
 
@@ -329,6 +360,8 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
 
-  console.log(`🚀 Server running http://localhost:${PORT}`);
+  console.log(
+    `🚀 Server running http://localhost:${PORT}`
+  );
 
 });
