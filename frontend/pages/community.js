@@ -7,7 +7,7 @@ export default function CommunityPage() {
   const [menu, setMenu] = useState(false);
 
   const fetchProjects = async () => {
-    const res = await fetch("http://localhost:5000/community-projects");
+    const res = await fetch("https://ai-website-builder-saas.onrender.com/community-projects");
     const data = await res.json();
     setProjects(Array.isArray(data) ? data : []);
   };
@@ -17,7 +17,7 @@ export default function CommunityPage() {
   }, []);
 
   const deleteProject = async (id) => {
-    await fetch(`http://localhost:5000/delete-project/${id}`, {
+    await fetch(`https://ai-website-builder-saas.onrender.com/delete-project/${id}`, {
       method: "DELETE",
     });
     toast.success("Deleted");
