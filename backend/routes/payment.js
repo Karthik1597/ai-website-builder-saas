@@ -1,128 +1,134 @@
-import express from "express";
-import pool from "../lib/db.js";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
-const router = express.Router();
+const API = "https://ai-website-builder-saas.onrender.com";
 
-/* ======================================
-   SAVE PAYMENT
-====================================== */
+export default function PaymentSuccess() {
+  const router = useRouter();
+  const [status, setStatus] = useState("saving");
+  const [userData, setUserData] = useState(null);
 
-router.post("/save-payment", async (req, res) => {
-  try {
-    console.log("💳 PAYMENT RECEIVED:", req.body);
+  useEffect(() => {
+    if (!router.isReady) return;
 
-    const {
-      name,
-      email,
-      phone,
-      address,
-      plan
-    } = req.body;
+    const savedData = localStorage.getItem("checkoutData");
 
-    // 🔥 FIX 1: basic validation (safe, no structure change)
-    if (!email || !plan) {
-      return res.status(400).json({
-        error: "Invalid payment data"
-      });
+    if (!savedData) {
+      setStatus("error");
+      return;
     }
 
-    const result = await pool.query(
-      `
-      INSERT INTO payments
-      (
-        name,
-        email,
-        phone,
-        address,
-        plan,
-        payment_status
-      )
-      VALUES ($1,$2,$3,$4,$5,$6)
-      RETURNING *
-      `,
-      [
-        name,
-        email,
-        phone,
-        address,
-        plan,
+    const paymentData = JSON.parse(savedData);
+    setUserData(paymentData);
 
-        // 🔥 KEEP YOUR LOGIC BUT SAFER
-        "success"
-      ]
-    );
+    fetch(`${API}/save-payment`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(paymentData),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        setStatus("success");
+        localStorage.removeItem("checkoutData");
+      })
+      .catch((err) => {
+        console.error(err);
+        setStatus("error");
+      });
+  }, [router.isReady]);
 
-    console.log(
-      "✅ PAYMENT SAVED TO POSTGRESQL:",
-      result.rows[0]
-    );
+  return (
+    <div style={styles.container}>
+      <div style={styles.card}>
 
-    res.json({
-      success: true,
-      payment: result.rows[0]
-    });
+        {status === "saving" && (
+          <>
+            <h1 style={styles.loading}>⏳ Processing Payment...</h1>
+            <p style={styles.text}>
+              Please wait while we activate your plan.
+            </p>
+          </>
+        )}
 
-  } catch (err) {
-    console.error("❌ PAYMENT SAVE ERROR:", err);
+        {status === "success" && userData && (
+          <>
+            <h1 style={styles.success}>🎉 Payment Successful</h1>
+            <p style={styles.text}>
+              Welcome <b>{userData.name}</b>, your plan is now active.
+            </p>
 
-    res.status(500).json({
-      error: "Payment save failed"
-    });
-  }
-});
+            <div style={styles.box}>
+              <p><strong>Email:</strong> {userData.email}</p>
+              <p><strong>Plan:</strong> {userData.plan}</p>
+              <p><strong>Status:</strong> Active</p>
+            </div>
 
-/* ======================================
-   GET ALL PAYMENTS
-====================================== */
+            <button
+              style={styles.button}
+              onClick={() => router.push("/projects")}
+            >
+              Go to Dashboard →
+            </button>
+          </>
+        )}
 
-router.get("/admin/payments", async (req, res) => {
-  try {
-    const result = await pool.query(
-      `
-      SELECT *
-      FROM payments
-      ORDER BY id DESC
-      `
-    );
+        {status === "error" && (
+          <>
+            <h1 style={styles.error}>❌ Payment Error</h1>
+            <p style={styles.text}>
+              Something went wrong. Please try again.
+            </p>
 
-    res.json(result.rows);
+            <button
+              style={styles.button}
+              onClick={() => router.push("/")}
+            >
+              Back to Home
+            </button>
+          </>
+        )}
 
-  } catch (err) {
-    console.error(err);
+      </div>
+    </div>
+  );
+}
 
-    res.status(500).json({
-      error: "Failed to load payments"
-    });
-  }
-});
-
-/* ======================================
-   DELETE PAYMENT
-====================================== */
-
-router.delete("/admin/payments/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    await pool.query(
-      `
-      DELETE FROM payments
-      WHERE id=$1
-      `,
-      [id]
-    );
-
-    res.json({
-      success: true
-    });
-
-  } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      error: "Delete failed"
-    });
-  }
-});
-
-export default router;
+const styles = {
+  container: {
+    height: "100vh",
+    background: "#0d0d0d",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  card: {
+    background: "#1a1a1a",
+    padding: "40px",
+    borderRadius: "12px",
+    textAlign: "center",
+    width: "400px",
+    color: "#fff",
+  },
+  loading: { color: "#facc15" },
+  success: { color: "#22c55e" },
+  error: { color: "#ef4444" },
+  text: { color: "#ccc" },
+  box: {
+    background: "#262626",
+    padding: "15px",
+    borderRadius: "8px",
+    margin: "20px 0",
+    textAlign: "left",
+  },
+  button: {
+    padding: "12px",
+    width: "100%",
+    background: "#6366f1",
+    border: "none",
+    borderRadius: "8px",
+    color: "#fff",
+    cursor: "pointer",
+  },
+};
