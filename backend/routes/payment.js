@@ -8,13 +8,8 @@ const router = express.Router();
 ====================================== */
 
 router.post("/save-payment", async (req, res) => {
-
   try {
-
-    console.log(
-      "💳 PAYMENT RECEIVED:",
-      req.body
-    );
+    console.log("💳 PAYMENT RECEIVED:", req.body);
 
     const {
       name,
@@ -23,6 +18,13 @@ router.post("/save-payment", async (req, res) => {
       address,
       plan
     } = req.body;
+
+    // 🔥 FIX 1: basic validation (safe, no structure change)
+    if (!email || !plan) {
+      return res.status(400).json({
+        error: "Invalid payment data"
+      });
+    }
 
     const result = await pool.query(
       `
@@ -44,6 +46,8 @@ router.post("/save-payment", async (req, res) => {
         phone,
         address,
         plan,
+
+        // 🔥 KEEP YOUR LOGIC BUT SAFER
         "success"
       ]
     );
@@ -59,11 +63,7 @@ router.post("/save-payment", async (req, res) => {
     });
 
   } catch (err) {
-
-    console.error(
-      "❌ PAYMENT SAVE ERROR:",
-      err
-    );
+    console.error("❌ PAYMENT SAVE ERROR:", err);
 
     res.status(500).json({
       error: "Payment save failed"
@@ -76,9 +76,7 @@ router.post("/save-payment", async (req, res) => {
 ====================================== */
 
 router.get("/admin/payments", async (req, res) => {
-
   try {
-
     const result = await pool.query(
       `
       SELECT *
@@ -90,7 +88,6 @@ router.get("/admin/payments", async (req, res) => {
     res.json(result.rows);
 
   } catch (err) {
-
     console.error(err);
 
     res.status(500).json({
@@ -103,35 +100,29 @@ router.get("/admin/payments", async (req, res) => {
    DELETE PAYMENT
 ====================================== */
 
-router.delete(
-  "/admin/payments/:id",
-  async (req, res) => {
+router.delete("/admin/payments/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
-    try {
+    await pool.query(
+      `
+      DELETE FROM payments
+      WHERE id=$1
+      `,
+      [id]
+    );
 
-      const { id } = req.params;
+    res.json({
+      success: true
+    });
 
-      await pool.query(
-        `
-        DELETE FROM payments
-        WHERE id=$1
-        `,
-        [id]
-      );
+  } catch (err) {
+    console.error(err);
 
-      res.json({
-        success: true
-      });
-
-    } catch (err) {
-
-      console.error(err);
-
-      res.status(500).json({
-        error: "Delete failed"
-      });
-    }
+    res.status(500).json({
+      error: "Delete failed"
+    });
   }
-);
+});
 
 export default router;
