@@ -68,12 +68,14 @@ const saveProjects = (projects) => {
 };
 
 /* ======================================
-   CREATE TABLE
+   CREATE TABLES
 ====================================== */
 
 const createTable = async () => {
 
   try {
+
+    /* PROJECTS TABLE */
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS projects (
@@ -82,6 +84,21 @@ const createTable = async () => {
         prompt TEXT,
         html TEXT,
         visibility TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    /* PAYMENTS TABLE */
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id BIGSERIAL PRIMARY KEY,
+        name TEXT,
+        email TEXT,
+        phone TEXT,
+        address TEXT,
+        plan TEXT,
+        payment_status TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
@@ -185,7 +202,7 @@ Rules:
       .replace(/<!DOCTYPE[^>]*>/gi, "")
       .trim();
 
-    // AUTO FIX HTML
+    /* AUTO FIX HTML */
 
     if (!raw.includes("<html")) {
 
