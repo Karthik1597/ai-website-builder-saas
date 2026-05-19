@@ -2,14 +2,31 @@ import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
 export default function CommunityPage() {
+
   const [projects, setProjects] = useState([]);
   const [active, setActive] = useState(null);
   const [menu, setMenu] = useState(false);
 
   const fetchProjects = async () => {
-    const res = await fetch("https://ai-website-builder-saas.onrender.com/community-projects");
-    const data = await res.json();
-    setProjects(Array.isArray(data) ? data : []);
+
+    try {
+
+      const res = await fetch(
+        "https://ai-website-builder-saas.onrender.com/community-projects"
+      );
+
+      const data = await res.json();
+
+      console.log("Community Projects:", data);
+
+      setProjects(Array.isArray(data) ? data : []);
+
+    } catch (err) {
+
+      console.error(err);
+
+      toast.error("Failed to load projects");
+    }
   };
 
   useEffect(() => {
@@ -17,24 +34,50 @@ export default function CommunityPage() {
   }, []);
 
   const deleteProject = async (id) => {
-    await fetch(`https://ai-website-builder-saas.onrender.com/delete-project/${id}`, {
-      method: "DELETE",
-    });
-    toast.success("Deleted");
-    setMenu(false);
-    setActive(null);
-    fetchProjects();
+
+    try {
+
+      await fetch(
+        `https://ai-website-builder-saas.onrender.com/delete-project/${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      toast.success("Deleted");
+
+      setMenu(false);
+
+      setActive(null);
+
+      fetchProjects();
+
+    } catch (err) {
+
+      console.error(err);
+
+      toast.error("Delete failed");
+    }
   };
 
   const copyHTML = (html) => {
+
     navigator.clipboard.writeText(html);
+
     toast.success("Copied");
+
     setMenu(false);
   };
 
   if (active)
+
     return (
-      <div style={{ position: "relative", height: "100vh" }}>
+      <div
+        style={{
+          position: "relative",
+          height: "100vh"
+        }}
+      >
 
         <div
           onClick={() => setMenu(!menu)}
@@ -64,6 +107,7 @@ export default function CommunityPage() {
               minWidth: 110
             }}
           >
+
             <div
               onClick={() => copyHTML(active.html)}
               style={{
@@ -74,6 +118,7 @@ export default function CommunityPage() {
             >
               Copy
             </div>
+
             <div
               onClick={() => deleteProject(active.id)}
               style={{
@@ -84,6 +129,7 @@ export default function CommunityPage() {
             >
               Delete
             </div>
+
           </div>
         )}
 
@@ -101,28 +147,46 @@ export default function CommunityPage() {
                 overflow:auto;
                 scrollbar-width:none;
               }
-              ::-webkit-scrollbar{display:none}
+
+              ::-webkit-scrollbar{
+                display:none;
+              }
             </style>
+
             ${active.html}
           `}
         />
+
       </div>
     );
 
   return (
     <div className="project-grid">
+
       {projects.map((p) => (
+
         <div
           key={p.id}
           className="project-card"
           onClick={() => setActive(p)}
         >
-          <div className="project-title">{p.title || p.prompt}</div>
-          <div className="project-date">
-            {new Date(p.createdAt).toLocaleDateString()}
+
+          <div className="project-title">
+            {p.title || p.prompt}
           </div>
+
+          <div className="project-date">
+            {
+              p.created_at
+                ? new Date(p.created_at).toLocaleDateString()
+                : "No Date"
+            }
+          </div>
+
         </div>
+
       ))}
+
     </div>
   );
 }
