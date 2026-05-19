@@ -7,6 +7,7 @@ import cors from "cors";
 import fs from "fs";
 import paymentRoutes from "./routes/payment.js";
 import pool from "./lib/db.js";
+import Stripe from "stripe";
 
 const app = express();
 
@@ -54,6 +55,71 @@ const loadProjects = () => {
     return [];
   }
 };
+
+/* ======================================
+   STRIPE CHECKOUT
+====================================== */
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+app.post("/create-checkout-session", async (req, res) => {
+
+  try {
+
+    const {
+      plan,
+      price
+    } = req.body;
+
+    const session = await stripe.checkout.sessions.create({
+
+      payment_method_types: ["card"],
+
+      mode: "payment",
+
+      line_items: [
+        {
+          price_data: {
+            currency: "myr",
+
+            product_data: {
+              name: `AI Website Builder - ${plan} Plan`
+            },
+
+            unit_amount: Math.round(
+              Number(price) * 100
+            )
+          },
+
+          quantity: 1
+        }
+      ],
+
+      success_url:
+        "https://ai-website-builder-saas-sigma.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}",
+
+      cancel_url:
+        "https://ai-website-builder-saas-sigma.vercel.app/checkout"
+    });
+
+    res.json({
+      url: session.url
+    });
+
+  } catch (err) {
+
+    console.error(
+      "❌ STRIPE ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+
 
 /* ======================================
    SAVE PROJECTS
