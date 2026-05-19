@@ -19,7 +19,7 @@ export default function PaymentSuccess() {
     const paymentData = JSON.parse(savedData);
     setUserData(paymentData);
 
-    fetch("http://localhost:5000/save-payment", {
+    fetch("https://ai-website-builder-saas.onrender.com/save-payment", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

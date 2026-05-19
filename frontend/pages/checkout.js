@@ -2,7 +2,6 @@ import { useRouter } from "next/router";
 import { useState } from "react";
 
 export default function Checkout() {
-
   const router = useRouter();
   const { plan, price } = router.query;
 
@@ -18,42 +17,48 @@ export default function Checkout() {
   };
 
   const payNow = async () => {
-
     if (!user.name || !user.email) {
       alert("Fill required fields");
       return;
     }
 
     try {
-      // ✅ VERY IMPORTANT (FIX YOUR ISSUE)
-      localStorage.setItem("checkoutData", JSON.stringify({
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        address: user.address,
-        plan
-      }));
-
-      const res = await fetch("/api/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          ...user,
-          plan,
-          price
+      // keep your existing logic (UNCHANGED)
+      localStorage.setItem(
+        "checkoutData",
+        JSON.stringify({
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          address: user.address,
+          plan
         })
-      });
+      );
+
+      // ✅ FIXED: backend URL (THIS WAS YOUR BUG)
+      const res = await fetch(
+        "https://ai-website-builder-saas.onrender.com/create-checkout-session",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            ...user,
+            plan,
+            price
+          })
+        }
+      );
 
       const data = await res.json();
 
-      if (data.url) {
+      if (data?.url) {
         window.location.href = data.url;
       } else {
         alert("Payment failed. Try again.");
+        console.log("Stripe response:", data);
       }
-
     } catch (err) {
       console.error("❌ Checkout error:", err);
       alert("Something went wrong");
@@ -62,45 +67,18 @@ export default function Checkout() {
 
   return (
     <div style={{ padding: "40px", textAlign: "center" }}>
-
       <h1>Checkout - {plan} Plan</h1>
 
       <div style={{ maxWidth: "400px", margin: "auto" }}>
-
-        <input
-          name="name"
-          placeholder="Name"
-          onChange={handleChange}
-          style={input}
-        />
-
-        <input
-          name="email"
-          placeholder="Email"
-          onChange={handleChange}
-          style={input}
-        />
-
-        <input
-          name="phone"
-          placeholder="Phone"
-          onChange={handleChange}
-          style={input}
-        />
-
-        <input
-          name="address"
-          placeholder="Address"
-          onChange={handleChange}
-          style={input}
-        />
+        <input name="name" placeholder="Name" onChange={handleChange} style={input} />
+        <input name="email" placeholder="Email" onChange={handleChange} style={input} />
+        <input name="phone" placeholder="Phone" onChange={handleChange} style={input} />
+        <input name="address" placeholder="Address" onChange={handleChange} style={input} />
 
         <button onClick={payNow} style={btn}>
           Pay RM {price}
         </button>
-
       </div>
-
     </div>
   );
 }
