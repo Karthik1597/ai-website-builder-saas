@@ -15,10 +15,21 @@ app.use(cors());
 app.use(express.json());
 
 /* ======================================
+   STRIPE
+====================================== */
+
+const stripe = new Stripe(
+  process.env.STRIPE_SECRET_KEY
+);
+
+/* ======================================
    DEBUG
 ====================================== */
 
-console.log("DATABASE URL:", process.env.DATABASE_URL);
+console.log(
+  "DATABASE URL:",
+  process.env.DATABASE_URL
+);
 
 /* ======================================
    PAYMENT ROUTES
@@ -41,85 +52,30 @@ const loadProjects = () => {
   try {
 
     if (!fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, "[]");
+
+      fs.writeFileSync(
+        DATA_FILE,
+        "[]"
+      );
     }
 
-    const data = fs.readFileSync(DATA_FILE, "utf-8");
+    const data = fs.readFileSync(
+      DATA_FILE,
+      "utf-8"
+    );
 
     return JSON.parse(data || "[]");
 
   } catch (err) {
 
-    console.error("Load error:", err);
+    console.error(
+      "Load error:",
+      err
+    );
 
     return [];
   }
 };
-
-/* ======================================
-   STRIPE CHECKOUT
-====================================== */
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-app.post("/create-checkout-session", async (req, res) => {
-
-  try {
-
-    const {
-      plan,
-      price
-    } = req.body;
-
-    const session = await stripe.checkout.sessions.create({
-
-      payment_method_types: ["card"],
-
-      mode: "payment",
-
-      line_items: [
-        {
-          price_data: {
-            currency: "myr",
-
-            product_data: {
-              name: `AI Website Builder - ${plan} Plan`
-            },
-
-            unit_amount: Math.round(
-              Number(price) * 100
-            )
-          },
-
-          quantity: 1
-        }
-      ],
-
-      success_url:
-        "https://ai-website-builder-saas-sigma.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}",
-
-      cancel_url:
-        "https://ai-website-builder-saas-sigma.vercel.app/checkout"
-    });
-
-    res.json({
-      url: session.url
-    });
-
-  } catch (err) {
-
-    console.error(
-      "❌ STRIPE ERROR:",
-      err
-    );
-
-    res.status(500).json({
-      error: err.message
-    });
-  }
-});
-
-
 
 /* ======================================
    SAVE PROJECTS
@@ -129,7 +85,11 @@ const saveProjects = (projects) => {
 
   fs.writeFileSync(
     DATA_FILE,
-    JSON.stringify(projects, null, 2)
+    JSON.stringify(
+      projects,
+      null,
+      2
+    )
   );
 };
 
@@ -169,11 +129,16 @@ const createTable = async () => {
       )
     `);
 
-    console.log("✅ Neon database connected");
+    console.log(
+      "✅ Neon database connected"
+    );
 
   } catch (err) {
 
-    console.error("❌ Database error:", err);
+    console.error(
+      "❌ Database error:",
+      err
+    );
   }
 };
 
@@ -189,6 +154,76 @@ app.get("/", (req, res) => {
 });
 
 /* ======================================
+   STRIPE CHECKOUT
+====================================== */
+
+app.post(
+  "/create-checkout-session",
+  async (req, res) => {
+
+    try {
+
+      const {
+        plan,
+        price
+      } = req.body;
+
+      const session =
+        await stripe.checkout.sessions.create({
+
+          payment_method_types: [
+            "card"
+          ],
+
+          mode: "payment",
+
+          line_items: [
+            {
+              price_data: {
+
+                currency: "myr",
+
+                product_data: {
+                  name:
+                    `AI Website Builder - ${plan} Plan`
+                },
+
+                unit_amount:
+                  Math.round(
+                    Number(price) * 100
+                  )
+              },
+
+              quantity: 1
+            }
+          ],
+
+          success_url:
+            "https://ai-website-builder-saas-sigma.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}",
+
+          cancel_url:
+            "https://ai-website-builder-saas-sigma.vercel.app/checkout"
+        });
+
+      res.json({
+        url: session.url
+      });
+
+    } catch (err) {
+
+      console.error(
+        "❌ STRIPE ERROR:",
+        err
+      );
+
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+/* ======================================
    GENERATE WEBSITE
 ====================================== */
 
@@ -199,12 +234,14 @@ app.post("/generate", async (req, res) => {
     const { prompt } = req.body;
 
     if (!prompt) {
+
       return res.status(400).json({
         error: "Prompt required",
       });
     }
 
     if (!process.env.OPENAI_API_KEY) {
+
       return res.status(500).json({
         error: "Missing API key",
       });
@@ -230,14 +267,23 @@ Rules:
       "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
+
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
+          Authorization:
+            `Bearer ${process.env.OPENAI_API_KEY}`,
+
+          "Content-Type":
+            "application/json",
         },
+
         body: JSON.stringify({
+
           model: "gpt-4o",
+
           temperature: 0.8,
+
           max_tokens: 4000,
+
           messages: [
             {
               role: "system",
@@ -256,7 +302,11 @@ Rules:
 
     console.log(
       "OPENAI RESPONSE:",
-      JSON.stringify(data, null, 2)
+      JSON.stringify(
+        data,
+        null,
+        2
+      )
     );
 
     let raw =
@@ -268,14 +318,13 @@ Rules:
       .replace(/<!DOCTYPE[^>]*>/gi, "")
       .trim();
 
-    /* AUTO FIX HTML */
-
     if (!raw.includes("<html")) {
 
       raw = `
       <html>
         <head>
           <meta charset="UTF-8" />
+
           <meta
             name="viewport"
             content="width=device-width, initial-scale=1.0"
@@ -295,7 +344,10 @@ Rules:
 
   } catch (err) {
 
-    console.error("Generation error:", err);
+    console.error(
+      "Generation error:",
+      err
+    );
 
     res.status(500).json({
       error: "Generation failed",
@@ -327,8 +379,13 @@ app.post("/save-project", async (req, res) => {
     await pool.query(
       `
       INSERT INTO projects
-      (title, prompt, html, visibility)
-      VALUES ($1, $2, $3, $4)
+      (
+        title,
+        prompt,
+        html,
+        visibility
+      )
+      VALUES ($1,$2,$3,$4)
       `,
       [
         title || prompt,
@@ -344,7 +401,10 @@ app.post("/save-project", async (req, res) => {
 
   } catch (err) {
 
-    console.error("Save error:", err);
+    console.error(
+      "Save error:",
+      err
+    );
 
     res.status(500).json({
       error: "Save failed",
@@ -360,14 +420,17 @@ app.get("/my-projects", async (req, res) => {
 
   try {
 
-    const result = await pool.query(`
-      SELECT *
-      FROM projects
-      WHERE visibility='private'
-      ORDER BY id DESC
-    `);
+    const result =
+      await pool.query(`
+        SELECT *
+        FROM projects
+        WHERE visibility='private'
+        ORDER BY id DESC
+      `);
 
-    res.json(result.rows);
+    res.json(
+      result.rows
+    );
 
   } catch (err) {
 
@@ -383,68 +446,81 @@ app.get("/my-projects", async (req, res) => {
    COMMUNITY PROJECTS
 ====================================== */
 
-app.get("/community-projects", async (req, res) => {
+app.get(
+  "/community-projects",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const result = await pool.query(`
-      SELECT *
-      FROM projects
-      WHERE visibility='public'
-      ORDER BY id DESC
-    `);
+      const result =
+        await pool.query(`
+          SELECT *
+          FROM projects
+          WHERE visibility='public'
+          ORDER BY id DESC
+        `);
 
-    res.json(result.rows);
+      res.json(
+        result.rows
+      );
 
-  } catch (err) {
+    } catch (err) {
 
-    console.error(err);
+      console.error(err);
 
-    res.status(500).json({
-      error: "Load failed",
-    });
+      res.status(500).json({
+        error: "Load failed",
+      });
+    }
   }
-});
+);
 
 /* ======================================
    DELETE PROJECT
 ====================================== */
 
-app.delete("/delete-project/:id", async (req, res) => {
+app.delete(
+  "/delete-project/:id",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const id = req.params.id;
+      const id =
+        req.params.id;
 
-    await pool.query(`
-      DELETE FROM projects
-      WHERE id=$1
-    `, [id]);
+      await pool.query(
+        `
+        DELETE FROM projects
+        WHERE id=$1
+        `,
+        [id]
+      );
 
-    res.json({
-      success: true,
-    });
+      res.json({
+        success: true,
+      });
 
-  } catch (err) {
+    } catch (err) {
 
-    console.error(err);
+      console.error(err);
 
-    res.status(500).json({
-      error: "Delete failed",
-    });
+      res.status(500).json({
+        error: "Delete failed",
+      });
+    }
   }
-});
+);
 
 /* ======================================
    START SERVER
 ====================================== */
 
-const PORT = process.env.PORT || 5000;
+const PORT =
+  process.env.PORT || 5000;
 
 app.listen(PORT, () => {
 
   console.log(
     `🚀 Server running http://localhost:${PORT}`
   );
-
 });
