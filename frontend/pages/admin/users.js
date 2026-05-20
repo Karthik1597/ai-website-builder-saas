@@ -1,182 +1,136 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-export default function UsersPage() {
+export default function AdminLogin() {
 
-  const [users, setUsers] =
-    useState([]);
-
-  const [search, setSearch] =
+  const [username, setUsername] =
     useState("");
 
-  const loadUsers = async () => {
+  const [password, setPassword] =
+    useState("");
 
-    const res = await fetch(
-      "http://localhost:5001/admin/users"
-    );
+  const handleLogin = async () => {
 
-    const data = await res.json();
+    try {
 
-    setUsers(data);
-  };
+      console.log("🔥 Login clicked");
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+      const res = await fetch(
+        "https://ai-website-builder-saas.onrender.com/admin-login",
+        {
+          method: "POST",
 
-  const deleteUser = async (id) => {
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
 
-    const confirmDelete =
-      confirm("Delete this user?");
+          body: JSON.stringify({
+            username,
+            password,
+          }),
+        }
+      );
 
-    if (!confirmDelete) return;
+      const data = await res.json();
 
-    await fetch(
-      `http://localhost:5001/admin/users/${id}`,
-      {
-        method: "DELETE",
+      console.log("✅ RESPONSE:", data);
+
+      if (data.success) {
+
+        localStorage.setItem(
+          "adminLoggedIn",
+          "true"
+        );
+
+        window.location.href =
+          "/admin/dashboard";
+
+      } else {
+
+        alert("Invalid login");
       }
-    );
 
-    loadUsers();
+    } catch (err) {
+
+      console.error(err);
+
+      alert("Server error");
+    }
   };
-
-  const filteredUsers =
-    users.filter((user) =>
-      user.email
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    );
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(135deg,#020617,#0f172a)",
-        color: "#fff",
-        padding: "40px",
+        background: "#0f172a",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
       }}
     >
 
-      <h1
-        style={{
-          fontSize: "38px",
-          marginBottom: "20px",
-        }}
-      >
-        👥 Users Management
-      </h1>
-
-      <input
-        placeholder="Search email..."
-
-        value={search}
-
-        onChange={(e) =>
-          setSearch(e.target.value)
-        }
-
-        style={{
-          width: "100%",
-          maxWidth: "400px",
-          padding: "14px",
-          borderRadius: "12px",
-          border: "none",
-          marginBottom: "30px",
-          background: "#1e293b",
-          color: "#fff",
-        }}
-      />
-
       <div
         style={{
-          overflowX: "auto",
+          width: "400px",
+          padding: "40px",
+          background: "#111827",
+          borderRadius: "20px",
         }}
       >
 
-        <table
+        <h1
           style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            background: "#111827",
-            borderRadius: "20px",
-            overflow: "hidden",
+            color: "#fff",
+            marginBottom: "20px",
           }}
         >
+          Admin Login
+        </h1>
 
-          <thead
-            style={{
-              background: "#1e293b",
-            }}
-          >
-            <tr>
-              <th style={thStyle}>ID</th>
-              <th style={thStyle}>Name</th>
-              <th style={thStyle}>Email</th>
-              <th style={thStyle}>Action</th>
-            </tr>
-          </thead>
+        <input
+          placeholder="Username"
+          value={username}
+          onChange={(e) =>
+            setUsername(e.target.value)
+          }
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom: "20px",
+          }}
+        />
 
-          <tbody>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) =>
+            setPassword(e.target.value)
+          }
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom: "20px",
+          }}
+        />
 
-            {filteredUsers.map((user) => (
-
-              <tr key={user.id}>
-
-                <td style={tdStyle}>
-                  {user.id}
-                </td>
-
-                <td style={tdStyle}>
-                  {user.name}
-                </td>
-
-                <td style={tdStyle}>
-                  {user.email}
-                </td>
-
-                <td style={tdStyle}>
-
-                  <button
-                    onClick={() =>
-                      deleteUser(user.id)
-                    }
-
-                    style={{
-                      padding:
-                        "10px 18px",
-                      border: "none",
-                      borderRadius: "10px",
-                      background: "#ef4444",
-                      color: "#fff",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Delete
-                  </button>
-
-                </td>
-
-              </tr>
-            ))}
-
-          </tbody>
-
-        </table>
+        <button
+          onClick={handleLogin}
+          style={{
+            width: "100%",
+            padding: "14px",
+            background: "#6366f1",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+            borderRadius: "10px",
+          }}
+        >
+          Login
+        </button>
 
       </div>
 
     </div>
   );
 }
-
-const thStyle = {
-  padding: "18px",
-  textAlign: "left",
-};
-
-const tdStyle = {
-  padding: "18px",
-  borderTop:
-    "1px solid rgba(255,255,255,0.06)",
-};

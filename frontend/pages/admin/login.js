@@ -15,7 +15,7 @@ export default function AdminLogin() {
       console.log("🔥 Login clicked");
 
       const res = await fetch(
-        "http://localhost:5001/admin-login",
+        "https://ai-website-builder-saas.onrender.com/admin-login",
         {
           method: "POST",
 
@@ -42,7 +42,6 @@ export default function AdminLogin() {
           "true"
         );
 
-        // ✅ SIMPLE REDIRECT
         window.location.href =
           "/admin/dashboard";
 

@@ -11,7 +11,7 @@ export default function PaymentsPage() {
   const loadPayments = async () => {
 
     const res = await fetch(
-      "http://localhost:5001/admin/payments"
+      "https://ai-website-builder-saas.onrender.com/admin/payments"
     );
 
     const data = await res.json();
@@ -31,7 +31,7 @@ export default function PaymentsPage() {
     if (!confirmDelete) return;
 
     await fetch(
-      `http://localhost:5001/admin/payments/${id}`,
+      `https://ai-website-builder-saas.onrender.com/admin/payments/${id}`,
       {
         method: "DELETE",
       }
@@ -113,7 +113,6 @@ export default function PaymentsPage() {
               <th style={thStyle}>ID</th>
               <th style={thStyle}>Email</th>
               <th style={thStyle}>Plan</th>
-              <th style={thStyle}>Amount</th>
               <th style={thStyle}>Status</th>
               <th style={thStyle}>Action</th>
             </tr>
@@ -135,10 +134,6 @@ export default function PaymentsPage() {
 
                 <td style={tdStyle}>
                   {payment.plan}
-                </td>
-
-                <td style={tdStyle}>
-                  RM {payment.amount}
                 </td>
 
                 <td style={tdStyle}>
