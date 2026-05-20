@@ -8,9 +8,14 @@ export default function AdminLogin() {
   const [password, setPassword] =
     useState("");
 
+  const [loading, setLoading] =
+    useState(false);
+
   const handleLogin = async () => {
 
     try {
+
+      setLoading(true);
 
       console.log("🔥 Login clicked");
 
@@ -52,9 +57,18 @@ export default function AdminLogin() {
 
     } catch (err) {
 
-      console.error(err);
+      console.error(
+        "❌ LOGIN ERROR:",
+        err
+      );
 
-      alert("Server error");
+      alert(
+        "Server error. Check backend deployment."
+      );
+
+    } finally {
+
+      setLoading(false);
     }
   };
 
@@ -75,6 +89,8 @@ export default function AdminLogin() {
           padding: "40px",
           background: "#111827",
           borderRadius: "20px",
+          boxShadow:
+            "0 10px 30px rgba(0,0,0,0.5)",
         }}
       >
 
@@ -82,6 +98,7 @@ export default function AdminLogin() {
           style={{
             color: "#fff",
             marginBottom: "20px",
+            textAlign: "center",
           }}
         >
           Admin Login
@@ -97,6 +114,9 @@ export default function AdminLogin() {
             width: "100%",
             padding: "14px",
             marginBottom: "20px",
+            borderRadius: "10px",
+            border: "none",
+            outline: "none",
           }}
         />
 
@@ -111,22 +131,34 @@ export default function AdminLogin() {
             width: "100%",
             padding: "14px",
             marginBottom: "20px",
+            borderRadius: "10px",
+            border: "none",
+            outline: "none",
           }}
         />
 
         <button
           onClick={handleLogin}
+          disabled={loading}
           style={{
             width: "100%",
             padding: "14px",
-            background: "#6366f1",
+            background: loading
+              ? "#475569"
+              : "#6366f1",
             color: "#fff",
             border: "none",
             cursor: "pointer",
             borderRadius: "10px",
+            fontWeight: "bold",
+            fontSize: "16px",
           }}
         >
-          Login
+          {
+            loading
+              ? "Logging in..."
+              : "Login"
+          }
         </button>
 
       </div>
