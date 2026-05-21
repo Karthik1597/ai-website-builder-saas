@@ -818,7 +818,7 @@ app.delete(
 );
 
 
-/* ======================================
+//* ======================================
    SIGNUP
 ====================================== */
 
@@ -839,11 +839,12 @@ app.post("/signup", async (req, res) => {
     ) {
 
       return res.status(400).json({
-        message: "All fields required"
+        message:
+          "All fields required"
       });
     }
 
-    const existingUser =
+    const existing =
       await pool.query(
         `
         SELECT *
@@ -854,18 +855,23 @@ app.post("/signup", async (req, res) => {
       );
 
     if (
-      existingUser.rows.length > 0
+      existing.rows.length > 0
     ) {
 
       return res.status(400).json({
-        message: "User already exists"
+        message:
+          "User already exists"
       });
     }
 
     await pool.query(
       `
       INSERT INTO users
-      (name,email,password)
+      (
+        name,
+        email,
+        password
+      )
       VALUES ($1,$2,$3)
       `,
       [
@@ -883,10 +889,14 @@ app.post("/signup", async (req, res) => {
 
   } catch (err) {
 
-    console.error(err);
+    console.error(
+      "SIGNUP ERROR:",
+      err
+    );
 
     res.status(500).json({
-      message: "Signup failed"
+      message:
+        "Signup failed"
     });
   }
 });

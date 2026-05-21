@@ -1,204 +1,58 @@
-import { useState } from "react";
+export default async function handler(req, res) {
 
-export default function Signup() {
+  if (req.method !== "POST") {
 
-  const [name, setName] =
-    useState("");
+    return res.status(405).json({
+      message: "Method not allowed"
+    });
+  }
 
-  const [email, setEmail] =
-    useState("");
+  try {
 
-  const [password, setPassword] =
-    useState("");
+    const response = await fetch(
+      "https://ai-website-builder-saas.onrender.com/signup",
+      {
+        method: "POST",
 
-  const [message, setMessage] =
-    useState("");
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-  const handleSignup = async () => {
+        body: JSON.stringify(req.body),
+      }
+    );
+
+    const text =
+      await response.text();
+
+    let data = {};
 
     try {
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/signup`, {
-        
-          method: "POST",
+      data = JSON.parse(text);
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+    } catch {
 
-          body: JSON.stringify({
-            name,
-            email,
-            password,
-          }),
-        }
-      );
-
-      const data =
-        await res.json();
-
-      if (res.ok) {
-
-        setMessage(
-          "✅ Account created successfully"
-        );
-
-        setName("");
-        setEmail("");
-        setPassword("");
-
-      } else {
-
-        setMessage(
-          data.message ||
-          "Signup failed"
-        );
-      }
-
-    } catch (err) {
-
-      console.error(err);
-
-      setMessage(
-        "Server error"
-      );
+      data = {
+        message: text
+      };
     }
-  };
 
-  return (
+    return res
+      .status(response.status)
+      .json(data);
 
-    <div
-      style={{
-        minHeight: "100vh",
-        background:
-          "#0f172a",
-        display: "flex",
-        justifyContent:
-          "center",
-        alignItems:
-          "center",
-      }}
-    >
+  } catch (error) {
 
-      <div
-        style={{
-          width: "400px",
-          padding: "40px",
-          background:
-            "#111827",
-          borderRadius:
-            "20px",
-        }}
-      >
+    console.error(
+      "SIGNUP API ERROR:",
+      error
+    );
 
-        <h1
-          style={{
-            color: "#fff",
-            marginBottom:
-              "20px",
-          }}
-        >
-          Signup
-        </h1>
-
-        <input
-          placeholder="Name"
-
-          value={name}
-
-          onChange={(e) =>
-            setName(
-              e.target.value
-            )
-          }
-
-          style={{
-            width: "100%",
-            padding: "14px",
-            marginBottom:
-              "20px",
-          }}
-        />
-
-        <input
-          placeholder="Email"
-
-          value={email}
-
-          onChange={(e) =>
-            setEmail(
-              e.target.value
-            )
-          }
-
-          style={{
-            width: "100%",
-            padding: "14px",
-            marginBottom:
-              "20px",
-          }}
-        />
-
-        <input
-          type="password"
-
-          placeholder="Password"
-
-          value={password}
-
-          onChange={(e) =>
-            setPassword(
-              e.target.value
-            )
-          }
-
-          style={{
-            width: "100%",
-            padding: "14px",
-            marginBottom:
-              "20px",
-          }}
-        />
-
-        <button
-          onClick={
-            handleSignup
-          }
-
-          style={{
-            width: "100%",
-            padding: "14px",
-            background:
-              "#6366f1",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer",
-            borderRadius:
-              "10px",
-          }}
-        >
-          Signup
-        </button>
-
-        {message && (
-
-          <p
-            style={{
-              color: "#fff",
-              marginTop:
-                "20px",
-              textAlign:
-                "center",
-            }}
-          >
-            {message}
-          </p>
-
-        )}
-
-      </div>
-
-    </div>
-  );
+    return res.status(500).json({
+      message:
+        "Backend connection failed"
+    });
+  }
 }
