@@ -129,6 +129,19 @@ const createTable = async () => {
       )
     `);
 
+    /* USERS TABLE */
+
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT,
+    email TEXT UNIQUE,
+    password TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+  )
+`);
+
+
     console.log(
       "✅ Neon database connected"
     );
