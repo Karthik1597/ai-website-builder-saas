@@ -5,9 +5,8 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import fs from "fs";
-import paymentRoutes from "./routes/payment.js";
-import pool from "./lib/db.js";
 import Stripe from "stripe";
+import pool from "./lib/db.js";
 
 const app = express();
 
@@ -30,12 +29,6 @@ console.log(
   "DATABASE URL:",
   process.env.DATABASE_URL
 );
-
-/* ======================================
-   PAYMENT ROUTES
-====================================== */
-
-app.use("/", paymentRoutes);
 
 /* ======================================
    FILE STORAGE
@@ -97,11 +90,11 @@ const saveProjects = (projects) => {
    CREATE TABLES
 ====================================== */
 
-const createTable = async () => {
+const createTables = async () => {
 
   try {
 
-    /* PROJECTS TABLE */
+    /* PROJECTS */
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS projects (
@@ -114,7 +107,7 @@ const createTable = async () => {
       )
     `);
 
-    /* PAYMENTS TABLE */
+    /* PAYMENTS */
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS payments (
@@ -125,22 +118,22 @@ const createTable = async () => {
         address TEXT,
         plan TEXT,
         payment_status TEXT,
+        amount TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
-    /* USERS TABLE */
+    /* USERS */
 
-await pool.query(`
-  CREATE TABLE IF NOT EXISTS users (
-    id BIGSERIAL PRIMARY KEY,
-    name TEXT,
-    email TEXT UNIQUE,
-    password TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-  )
-`);
-
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id BIGSERIAL PRIMARY KEY,
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
 
     console.log(
       "✅ Neon database connected"
@@ -155,7 +148,7 @@ await pool.query(`
   }
 };
 
-createTable();
+createTables();
 
 /* ======================================
    TEST ROUTE
@@ -163,7 +156,280 @@ createTable();
 
 app.get("/", (req, res) => {
 
-  res.send("Backend working ✅");
+  res.send(
+    "Backend working ✅"
+  );
+});
+
+/* ======================================
+   ADMIN LOGIN
+====================================== */
+
+app.post("/admin-login", async (req, res) => {
+
+  try {
+
+    const {
+      username,
+      password
+    } = req.body;
+
+    if (
+      username === "admin" &&
+      password === "admin123"
+    ) {
+
+      return res.json({
+        success: true
+      });
+    }
+
+    return res.status(401).json({
+      error: "Invalid credentials"
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Server error"
+    });
+  }
+});
+
+/* ======================================
+   GET USERS
+====================================== */
+
+app.get("/admin/users", async (req, res) => {
+
+  try {
+
+    const result = await pool.query(`
+      SELECT id,name,email,created_at
+      FROM users
+      ORDER BY id DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Failed to load users"
+    });
+  }
+});
+
+/* ======================================
+   DELETE USER
+====================================== */
+
+app.delete(
+  "/admin/users/:id",
+  async (req, res) => {
+
+    try {
+
+      await pool.query(`
+        DELETE FROM users
+        WHERE id=$1
+      `, [req.params.id]);
+
+      res.json({
+        success: true
+      });
+
+    } catch (err) {
+
+      console.error(err);
+
+      res.status(500).json({
+        error: "Delete failed"
+      });
+    }
+  }
+);
+
+/* ======================================
+   GET PAYMENTS
+====================================== */
+
+app.get("/admin/payments", async (req, res) => {
+
+  try {
+
+    const result = await pool.query(`
+      SELECT *
+      FROM payments
+      ORDER BY id DESC
+    `);
+
+    res.json(result.rows);
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Failed to load payments"
+    });
+  }
+});
+
+/* ======================================
+   DELETE PAYMENT
+====================================== */
+
+app.delete(
+  "/admin/payments/:id",
+  async (req, res) => {
+
+    try {
+
+      await pool.query(`
+        DELETE FROM payments
+        WHERE id=$1
+      `, [req.params.id]);
+
+      res.json({
+        success: true
+      });
+
+    } catch (err) {
+
+      console.error(err);
+
+      res.status(500).json({
+        error: "Delete failed"
+      });
+    }
+  }
+);
+
+/* ======================================
+   SIGNUP
+====================================== */
+
+app.post("/signup", async (req, res) => {
+
+  try {
+
+    const {
+      name,
+      email,
+      password
+    } = req.body;
+
+    if (
+      !name ||
+      !email ||
+      !password
+    ) {
+
+      return res.status(400).json({
+        error: "All fields required"
+      });
+    }
+
+    const existingUser =
+      await pool.query(
+        `
+        SELECT *
+        FROM users
+        WHERE email=$1
+        `,
+        [email]
+      );
+
+    if (
+      existingUser.rows.length > 0
+    ) {
+
+      return res.status(400).json({
+        error: "User already exists"
+      });
+    }
+
+    await pool.query(
+      `
+      INSERT INTO users
+      (name,email,password)
+      VALUES ($1,$2,$3)
+      `,
+      [
+        name,
+        email,
+        password
+      ]
+    );
+
+    res.json({
+      success: true
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Signup failed"
+    });
+  }
+});
+
+/* ======================================
+   LOGIN
+====================================== */
+
+app.post("/login", async (req, res) => {
+
+  try {
+
+    const {
+      email,
+      password
+    } = req.body;
+
+    const result =
+      await pool.query(
+        `
+        SELECT *
+        FROM users
+        WHERE email=$1
+        AND password=$2
+        `,
+        [
+          email,
+          password
+        ]
+      );
+
+    if (
+      result.rows.length === 0
+    ) {
+
+      return res.status(401).json({
+        error: "Invalid credentials"
+      });
+    }
+
+    res.json({
+      success: true,
+      user: result.rows[0]
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      error: "Login failed"
+    });
+  }
 });
 
 /* ======================================
@@ -177,6 +443,10 @@ app.post(
     try {
 
       const {
+        name,
+        email,
+        phone,
+        address,
         plan,
         price
       } = req.body;
@@ -215,8 +485,42 @@ app.post(
             "https://ai-website-builder-saas-sigma.vercel.app/payment-success?session_id={CHECKOUT_SESSION_ID}",
 
           cancel_url:
-            "https://ai-website-builder-saas-sigma.vercel.app/checkout"
+            "https://ai-website-builder-saas-sigma.vercel.app/checkout",
+
+          metadata: {
+            name,
+            email,
+            phone,
+            address,
+            plan,
+            amount: price
+          }
         });
+
+      await pool.query(
+        `
+        INSERT INTO payments
+        (
+          name,
+          email,
+          phone,
+          address,
+          plan,
+          amount,
+          payment_status
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        `,
+        [
+          name,
+          email,
+          phone,
+          address,
+          plan,
+          price,
+          "success"
+        ]
+      );
 
       res.json({
         url: session.url
@@ -249,14 +553,16 @@ app.post("/generate", async (req, res) => {
     if (!prompt) {
 
       return res.status(400).json({
-        error: "Prompt required",
+        error: "Prompt required"
       });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (
+      !process.env.OPENAI_API_KEY
+    ) {
 
       return res.status(500).json({
-        error: "Missing API key",
+        error: "Missing API key"
       });
     }
 
@@ -286,7 +592,7 @@ Rules:
             `Bearer ${process.env.OPENAI_API_KEY}`,
 
           "Content-Type":
-            "application/json",
+            "application/json"
         },
 
         body: JSON.stringify({
@@ -300,27 +606,19 @@ Rules:
           messages: [
             {
               role: "system",
-              content: SYSTEM_PROMPT,
+              content: SYSTEM_PROMPT
             },
             {
               role: "user",
-              content: prompt,
-            },
-          ],
-        }),
+              content: prompt
+            }
+          ]
+        })
       }
     );
 
-    const data = await response.json();
-
-    console.log(
-      "OPENAI RESPONSE:",
-      JSON.stringify(
-        data,
-        null,
-        2
-      )
-    );
+    const data =
+      await response.json();
 
     let raw =
       data?.choices?.[0]?.message?.content || "";
@@ -331,7 +629,9 @@ Rules:
       .replace(/<!DOCTYPE[^>]*>/gi, "")
       .trim();
 
-    if (!raw.includes("<html")) {
+    if (
+      !raw.includes("<html")
+    ) {
 
       raw = `
       <html>
@@ -352,7 +652,7 @@ Rules:
     }
 
     res.json({
-      html: raw,
+      html: raw
     });
 
   } catch (err) {
@@ -363,7 +663,7 @@ Rules:
     );
 
     res.status(500).json({
-      error: "Generation failed",
+      error: "Generation failed"
     });
   }
 });
@@ -409,7 +709,7 @@ app.post("/save-project", async (req, res) => {
     );
 
     res.json({
-      success: true,
+      success: true
     });
 
   } catch (err) {
@@ -420,7 +720,7 @@ app.post("/save-project", async (req, res) => {
     );
 
     res.status(500).json({
-      error: "Save failed",
+      error: "Save failed"
     });
   }
 });
@@ -441,16 +741,14 @@ app.get("/my-projects", async (req, res) => {
         ORDER BY id DESC
       `);
 
-    res.json(
-      result.rows
-    );
+    res.json(result.rows);
 
   } catch (err) {
 
     console.error(err);
 
     res.status(500).json({
-      error: "Load failed",
+      error: "Load failed"
     });
   }
 });
@@ -473,16 +771,14 @@ app.get(
           ORDER BY id DESC
         `);
 
-      res.json(
-        result.rows
-      );
+      res.json(result.rows);
 
     } catch (err) {
 
       console.error(err);
 
       res.status(500).json({
-        error: "Load failed",
+        error: "Load failed"
       });
     }
   }
@@ -498,19 +794,16 @@ app.delete(
 
     try {
 
-      const id =
-        req.params.id;
-
       await pool.query(
         `
         DELETE FROM projects
         WHERE id=$1
         `,
-        [id]
+        [req.params.id]
       );
 
       res.json({
-        success: true,
+        success: true
       });
 
     } catch (err) {
@@ -518,7 +811,7 @@ app.delete(
       console.error(err);
 
       res.status(500).json({
-        error: "Delete failed",
+        error: "Delete failed"
       });
     }
   }
@@ -534,6 +827,6 @@ const PORT =
 app.listen(PORT, () => {
 
   console.log(
-    `🚀 Server running http://localhost:${PORT}`
+    `🚀 Server running on port ${PORT}`
   );
 });
