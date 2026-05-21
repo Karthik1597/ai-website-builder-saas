@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/signup`,
+      "https://ai-website-builder-saas.onrender.com/signup",
       {
         method: "POST",
         headers: {
