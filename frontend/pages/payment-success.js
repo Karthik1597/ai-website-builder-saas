@@ -1,147 +1,197 @@
-import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 export default function PaymentSuccess() {
+
   const router = useRouter();
-  const [status, setStatus] = useState("saving");
-  const [userData, setUserData] = useState(null);
+
+  const {
+    session_id
+  } = router.query;
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
-    if (!router.isReady) return;
 
-    const savedData = localStorage.getItem("checkoutData");
+    if (!session_id) return;
 
-    if (!savedData) {
-      setStatus("error");
-      return;
-    }
+    const verifyPayment =
+      async () => {
 
-    const paymentData = JSON.parse(savedData);
-    setUserData(paymentData);
+        try {
 
-    fetch("https://ai-website-builder-saas.onrender.com/save-payment", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(paymentData),
-    })
-      .then((res) => res.json())
-      .then(() => {
-        setStatus("success");
-        localStorage.removeItem("checkoutData");
-      })
-      .catch(() => setStatus("error"));
-  }, [router.isReady]);
+          const res = await fetch(
+            `/api/verify-payment?session_id=${session_id}`
+          );
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.card}>
+          const data =
+            await res.json();
 
-        {status === "saving" && (
-          <>
-            <h1 style={styles.loading}>⏳ Processing Payment...</h1>
-            <p style={styles.text}>
-              Please wait while we activate your plan.
-            </p>
-          </>
-        )}
+          console.log(
+            "PAYMENT VERIFY:",
+            data
+          );
 
-        {status === "success" && userData && (
-          <>
-            <h1 style={styles.success}>🎉 Payment Successful</h1>
-            <p style={styles.text}>
-              Welcome <b>{userData.name}</b>, your plan is now active.
-            </p>
+          if (
+            data &&
+            data.payment_status === "paid"
+          ) {
 
-            <div style={styles.box}>
-              <p><strong>Email:</strong> {userData.email}</p>
-              <p><strong>Plan:</strong> {userData.plan}</p>
-              <p><strong>Status:</strong> Active</p>
-            </div>
+            setLoading(false);
 
-            <button
-              style={styles.button}
-              onClick={() => router.push("/projects")}
-            >
-              Go to Dashboard →
-            </button>
-          </>
-        )}
+          } else {
 
-        {status === "error" && (
-          <>
-            <h1 style={styles.error}>❌ Payment Error</h1>
-            <p style={styles.text}>
-              Something went wrong. Please try again.
-            </p>
+            setError(
+              "Payment verification failed"
+            );
+          }
 
-            <button
-              style={styles.button}
-              onClick={() => router.push("/")}
-            >
-              Back to Home
-            </button>
-          </>
-        )}
+        } catch (err) {
+
+          console.error(err);
+
+          setError(
+            "Something went wrong. Please try again."
+          );
+        }
+      };
+
+    verifyPayment();
+
+  }, [session_id]);
+
+  if (loading && !error) {
+
+    return (
+
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#0f172a",
+          color: "#fff",
+          fontSize: "24px"
+        }}
+      >
+        Processing Payment...
+      </div>
+    );
+  }
+
+  if (error) {
+
+    return (
+
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          background: "#0f172a",
+          color: "#fff",
+          padding: "30px",
+          textAlign: "center"
+        }}
+      >
+
+        <h1
+          style={{
+            color: "#ef4444",
+            marginBottom: "20px"
+          }}
+        >
+          ❌ Payment Error
+        </h1>
+
+        <p
+          style={{
+            marginBottom: "30px"
+          }}
+        >
+          {error}
+        </p>
+
+        <button
+          onClick={() =>
+            window.location.href = "/"
+          }
+
+          style={{
+            padding: "14px 30px",
+            border: "none",
+            borderRadius: "12px",
+            background: "#6366f1",
+            color: "#fff",
+            cursor: "pointer"
+          }}
+        >
+          Back to Home
+        </button>
 
       </div>
+    );
+  }
+
+  return (
+
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "#0f172a",
+        color: "#fff",
+        padding: "30px",
+        textAlign: "center"
+      }}
+    >
+
+      <h1
+        style={{
+          color: "#22c55e",
+          fontSize: "42px",
+          marginBottom: "20px"
+        }}
+      >
+        ✅ Payment Successful
+      </h1>
+
+      <p
+        style={{
+          color: "#cbd5e1",
+          marginBottom: "30px"
+        }}
+      >
+        Thank you for purchasing.
+      </p>
+
+      <button
+        onClick={() =>
+          window.location.href = "/"
+        }
+
+        style={{
+          padding: "14px 30px",
+          border: "none",
+          borderRadius: "12px",
+          background: "#6366f1",
+          color: "#fff",
+          cursor: "pointer"
+        }}
+      >
+        Back to Home
+      </button>
+
     </div>
   );
 }
-
-/* 🎨 DARK SAAS STYLE */
-const styles = {
-  container: {
-    height: "100vh",
-    background: "#0d0d0d", // 🔥 FULL BLACK BACKGROUND
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  card: {
-    background: "#1a1a1a", // dark card
-    padding: "40px",
-    borderRadius: "12px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
-    textAlign: "center",
-    width: "400px",
-    color: "#fff",
-  },
-  loading: {
-    fontSize: "24px",
-    color: "#facc15",
-  },
-  success: {
-    fontSize: "26px",
-    color: "#22c55e",
-  },
-  error: {
-    fontSize: "26px",
-    color: "#ef4444",
-  },
-  text: {
-    color: "#ccc",
-    margin: "15px 0",
-  },
-  box: {
-    background: "#262626",
-    padding: "15px",
-    borderRadius: "8px",
-    margin: "20px 0",
-    textAlign: "left",
-    fontSize: "14px",
-  },
-  button: {
-    marginTop: "10px",
-    padding: "12px",
-    width: "100%",
-    background: "#6366f1", // modern purple
-    border: "none",
-    borderRadius: "8px",
-    color: "#fff",
-    cursor: "pointer",
-    fontSize: "16px",
-    fontWeight: "bold",
-  },
-};
