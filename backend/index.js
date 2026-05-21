@@ -817,7 +817,6 @@ app.delete(
   }
 );
 
-
 /* ======================================
    SIGNUP
 ====================================== */
@@ -843,8 +842,6 @@ app.post("/signup", async (req, res) => {
       });
     }
 
-    // CHECK EXISTING USER
-
     const existingUser =
       await pool.query(
         `
@@ -863,8 +860,6 @@ app.post("/signup", async (req, res) => {
         message: "User already exists"
       });
     }
-
-    // INSERT USER
 
     await pool.query(
       `
@@ -967,6 +962,9 @@ app.post("/login", async (req, res) => {
     });
   }
 });
+
+
+
 
 /* ======================================
    START SERVER
