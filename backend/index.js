@@ -839,12 +839,13 @@ app.post("/signup", async (req, res) => {
     ) {
 
       return res.status(400).json({
-        message:
-          "All fields required"
+        message: "All fields required"
       });
     }
 
-    const existing =
+    // CHECK EXISTING USER
+
+    const existingUser =
       await pool.query(
         `
         SELECT *
@@ -855,14 +856,15 @@ app.post("/signup", async (req, res) => {
       );
 
     if (
-      existing.rows.length > 0
+      existingUser.rows.length > 0
     ) {
 
       return res.status(400).json({
-        message:
-          "User already exists"
+        message: "User already exists"
       });
     }
+
+    // INSERT USER
 
     await pool.query(
       `
@@ -895,13 +897,76 @@ app.post("/signup", async (req, res) => {
     );
 
     res.status(500).json({
-      message:
-        "Signup failed"
+      message: "Signup failed"
     });
   }
 });
 
+/* ======================================
+   LOGIN
+====================================== */
 
+app.post("/login", async (req, res) => {
+
+  try {
+
+    const {
+      email,
+      password
+    } = req.body;
+
+    const result =
+      await pool.query(
+        `
+        SELECT *
+        FROM users
+        WHERE email=$1
+        `,
+        [email]
+      );
+
+    if (
+      result.rows.length === 0
+    ) {
+
+      return res.status(400).json({
+        message: "User not found"
+      });
+    }
+
+    const user =
+      result.rows[0];
+
+    if (
+      user.password !== password
+    ) {
+
+      return res.status(400).json({
+        message: "Invalid password"
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (err) {
+
+    console.error(
+      "LOGIN ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      message: "Login failed"
+    });
+  }
+});
 
 /* ======================================
    START SERVER
