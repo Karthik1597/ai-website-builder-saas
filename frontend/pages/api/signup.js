@@ -1,46 +1,205 @@
-export default async function handler(req, res) {
+import { useState } from "react";
 
-  if (req.method !== "POST") {
+export default function Signup() {
 
-    return res.status(405).json({
-      message: "Method not allowed"
-    });
-  }
+  const [name, setName] =
+    useState("");
 
-  try {
+  const [email, setEmail] =
+    useState("");
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/signup`,
-      {
-        method: "POST",
+  const [password, setPassword] =
+    useState("");
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
+  const [message, setMessage] =
+    useState("");
 
-        body: JSON.stringify(
-          req.body
-        )
+  const handleSignup = async () => {
+
+    try {
+
+      const res = await fetch(
+        "/api/signup",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+          }),
+        }
+      );
+
+      const data =
+        await res.json();
+
+      if (res.ok) {
+
+        setMessage(
+          "✅ Account created successfully"
+        );
+
+        setName("");
+        setEmail("");
+        setPassword("");
+
+      } else {
+
+        setMessage(
+          data.message ||
+          "Signup failed"
+        );
       }
-    );
 
-    const data =
-      await response.json();
+    } catch (err) {
 
-    return res
-      .status(response.status)
-      .json(data);
+      console.error(err);
 
-  } catch (error) {
+      setMessage(
+        "Server error"
+      );
+    }
+  };
 
-    console.error(
-      "Signup error:",
-      error
-    );
+  return (
 
-    return res.status(500).json({
-      message: "Signup failed"
-    });
-  }
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "#0f172a",
+        display: "flex",
+        justifyContent:
+          "center",
+        alignItems:
+          "center",
+      }}
+    >
+
+      <div
+        style={{
+          width: "400px",
+          padding: "40px",
+          background:
+            "#111827",
+          borderRadius:
+            "20px",
+        }}
+      >
+
+        <h1
+          style={{
+            color: "#fff",
+            marginBottom:
+              "20px",
+          }}
+        >
+          Signup
+        </h1>
+
+        <input
+          placeholder="Name"
+
+          value={name}
+
+          onChange={(e) =>
+            setName(
+              e.target.value
+            )
+          }
+
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom:
+              "20px",
+          }}
+        />
+
+        <input
+          placeholder="Email"
+
+          value={email}
+
+          onChange={(e) =>
+            setEmail(
+              e.target.value
+            )
+          }
+
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom:
+              "20px",
+          }}
+        />
+
+        <input
+          type="password"
+
+          placeholder="Password"
+
+          value={password}
+
+          onChange={(e) =>
+            setPassword(
+              e.target.value
+            )
+          }
+
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom:
+              "20px",
+          }}
+        />
+
+        <button
+          onClick={
+            handleSignup
+          }
+
+          style={{
+            width: "100%",
+            padding: "14px",
+            background:
+              "#6366f1",
+            color: "#fff",
+            border: "none",
+            cursor: "pointer",
+            borderRadius:
+              "10px",
+          }}
+        >
+          Signup
+        </button>
+
+        {message && (
+
+          <p
+            style={{
+              color: "#fff",
+              marginTop:
+                "20px",
+              textAlign:
+                "center",
+            }}
+          >
+            {message}
+          </p>
+
+        )}
+
+      </div>
+
+    </div>
+  );
 }

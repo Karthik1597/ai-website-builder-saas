@@ -817,6 +817,82 @@ app.delete(
   }
 );
 
+
+/* ======================================
+   SIGNUP
+====================================== */
+
+app.post("/signup", async (req, res) => {
+
+  try {
+
+    const {
+      name,
+      email,
+      password
+    } = req.body;
+
+    if (
+      !name ||
+      !email ||
+      !password
+    ) {
+
+      return res.status(400).json({
+        message: "All fields required"
+      });
+    }
+
+    const existingUser =
+      await pool.query(
+        `
+        SELECT *
+        FROM users
+        WHERE email=$1
+        `,
+        [email]
+      );
+
+    if (
+      existingUser.rows.length > 0
+    ) {
+
+      return res.status(400).json({
+        message: "User already exists"
+      });
+    }
+
+    await pool.query(
+      `
+      INSERT INTO users
+      (name,email,password)
+      VALUES ($1,$2,$3)
+      `,
+      [
+        name,
+        email,
+        password
+      ]
+    );
+
+    res.json({
+      success: true,
+      message:
+        "Account created successfully"
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message: "Signup failed"
+    });
+  }
+});
+
+
+
 /* ======================================
    START SERVER
 ====================================== */
