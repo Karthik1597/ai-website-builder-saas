@@ -110,8 +110,19 @@ app.get("/admin/users", async (req, res) => {
 
   try {
 
+    // ✅ check table exists first
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id BIGSERIAL PRIMARY KEY,
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     const result = await pool.query(`
-      SELECT id,name,email
+      SELECT id, name, email
       FROM users
       ORDER BY id DESC
     `);
@@ -120,7 +131,10 @@ app.get("/admin/users", async (req, res) => {
 
   } catch (err) {
 
-    console.error(err);
+    console.error(
+      "❌ USERS ERROR:",
+      err
+    );
 
     res.status(500).json({
       error: "Failed to load users",
