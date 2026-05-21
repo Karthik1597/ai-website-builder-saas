@@ -1,58 +1,253 @@
-export default async function handler(req, res) {
+import { useState } from "react";
 
-  if (req.method !== "POST") {
+export default function Signup() {
 
-    return res.status(405).json({
-      message: "Method not allowed"
-    });
-  }
+  const [name, setName] =
+    useState("");
 
-  try {
+  const [email, setEmail] =
+    useState("");
 
-    const response = await fetch(
-      "https://ai-website-builder-saas.onrender.com/signup",
-      {
-        method: "POST",
+  const [password, setPassword] =
+    useState("");
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
+  const [confirmPassword,
+    setConfirmPassword] =
+    useState("");
 
-        body: JSON.stringify(req.body),
+  const [message, setMessage] =
+    useState("");
+
+  const handleSignup =
+    async () => {
+
+      try {
+
+        setMessage("");
+
+        if (
+          !name ||
+          !email ||
+          !password ||
+          !confirmPassword
+        ) {
+
+          setMessage(
+            "Please fill all fields"
+          );
+
+          return;
+        }
+
+        if (
+          password !==
+          confirmPassword
+        ) {
+
+          setMessage(
+            "Passwords do not match"
+          );
+
+          return;
+        }
+
+        const res = await fetch(
+          "/api/signup",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+            },
+
+            body: JSON.stringify({
+              name,
+              email,
+              password,
+            }),
+          }
+        );
+
+        const data =
+          await res.json();
+
+        console.log(data);
+
+        if (data.success) {
+
+          setMessage(
+            "✅ Account created successfully"
+          );
+
+          setTimeout(() => {
+
+            window.location.href =
+              "/login";
+
+          }, 1500);
+
+        } else {
+
+          setMessage(
+            data.message ||
+            data.error ||
+            "Signup failed"
+          );
+        }
+
+      } catch (err) {
+
+        console.error(err);
+
+        setMessage(
+          "Something went wrong"
+        );
       }
-    );
+    };
 
-    const text =
-      await response.text();
+  return (
 
-    let data = {};
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "#0f172a",
+        display: "flex",
+        justifyContent:
+          "center",
+        alignItems:
+          "center",
+      }}
+    >
 
-    try {
+      <div
+        style={{
+          width: "400px",
+          padding: "40px",
+          background:
+            "#111827",
+          borderRadius:
+            "20px",
+        }}
+      >
 
-      data = JSON.parse(text);
+        <h1
+          style={{
+            color: "#fff",
+            marginBottom:
+              "20px",
+          }}
+        >
+          Create Account
+        </h1>
 
-    } catch {
+        <input
+          placeholder="Name"
+          value={name}
+          onChange={(e) =>
+            setName(
+              e.target.value
+            )
+          }
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom:
+              "20px",
+          }}
+        />
 
-      data = {
-        message: text
-      };
-    }
+        <input
+          placeholder="Email"
+          value={email}
+          onChange={(e) =>
+            setEmail(
+              e.target.value
+            )
+          }
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom:
+              "20px",
+          }}
+        />
 
-    return res
-      .status(response.status)
-      .json(data);
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) =>
+            setPassword(
+              e.target.value
+            )
+          }
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom:
+              "20px",
+          }}
+        />
 
-  } catch (error) {
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirmPassword}
+          onChange={(e) =>
+            setConfirmPassword(
+              e.target.value
+            )
+          }
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom:
+              "20px",
+          }}
+        />
 
-    console.error(
-      "SIGNUP API ERROR:",
-      error
-    );
+        {
 
-    return res.status(500).json({
-      message:
-        "Backend connection failed"
-    });
-  }
+          message && (
+
+            <p
+              style={{
+                color:
+                  message.includes("✅")
+                    ? "#22c55e"
+                    : "#ef4444",
+
+                marginBottom:
+                  "20px",
+              }}
+            >
+              {message}
+            </p>
+          )
+        }
+
+        <button
+          onClick={handleSignup}
+          style={{
+            width: "100%",
+            padding: "14px",
+            background:
+              "#6366f1",
+            color: "#fff",
+            border: "none",
+            cursor:
+              "pointer",
+            borderRadius:
+              "10px",
+          }}
+        >
+          Signup
+        </button>
+
+      </div>
+
+    </div>
+  );
 }
