@@ -5,66 +5,22 @@ export default function PaymentSuccess() {
 
   const router = useRouter();
 
-  const {
-    session_id
-  } = router.query;
-
   const [loading, setLoading] =
     useState(true);
 
-  const [error, setError] =
-    useState("");
-
   useEffect(() => {
 
-    if (!session_id) return;
+    const timer = setTimeout(() => {
 
-    const verifyPayment =
-      async () => {
+      setLoading(false);
 
-        try {
+    }, 2500);
 
-          const res = await fetch(
-            `/api/verify-payment?session_id=${session_id}`
-          );
+    return () => clearTimeout(timer);
 
-          const data =
-            await res.json();
+  }, []);
 
-          console.log(
-            "PAYMENT VERIFY:",
-            data
-          );
-
-          if (
-            data &&
-            data.payment_status === "paid"
-          ) {
-
-            setLoading(false);
-
-          } else {
-
-            setError(
-              "Payment verification failed"
-            );
-          }
-
-        } catch (err) {
-
-          console.error(err);
-
-          setError(
-            "Something went wrong. Please try again."
-          );
-        }
-      };
-
-    verifyPayment();
-
-  }, [session_id]);
-
-  if (loading && !error) {
+  if (loading) {
 
     return (
 
@@ -80,62 +36,6 @@ export default function PaymentSuccess() {
         }}
       >
         Processing Payment...
-      </div>
-    );
-  }
-
-  if (error) {
-
-    return (
-
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#0f172a",
-          color: "#fff",
-          padding: "30px",
-          textAlign: "center"
-        }}
-      >
-
-        <h1
-          style={{
-            color: "#ef4444",
-            marginBottom: "20px"
-          }}
-        >
-          ❌ Payment Error
-        </h1>
-
-        <p
-          style={{
-            marginBottom: "30px"
-          }}
-        >
-          {error}
-        </p>
-
-        <button
-          onClick={() =>
-            window.location.href = "/"
-          }
-
-          style={{
-            padding: "14px 30px",
-            border: "none",
-            borderRadius: "12px",
-            background: "#6366f1",
-            color: "#fff",
-            cursor: "pointer"
-          }}
-        >
-          Back to Home
-        </button>
-
       </div>
     );
   }
