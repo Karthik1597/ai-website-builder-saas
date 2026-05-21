@@ -33,14 +33,12 @@ app.use((req, res, next) => {
 });
 
 /* ======================================
-   CREATE TABLES
+   CREATE USERS TABLE
 ====================================== */
 
-const createTables = async () => {
+const createTable = async () => {
 
   try {
-
-    /* USERS TABLE */
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -52,23 +50,8 @@ const createTables = async () => {
       )
     `);
 
-    /* PAYMENTS TABLE */
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS payments (
-        id BIGSERIAL PRIMARY KEY,
-        name TEXT,
-        email TEXT,
-        phone TEXT,
-        address TEXT,
-        plan TEXT,
-        payment_status TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
     console.log(
-      "✅ Database tables ready"
+      "✅ Users table ready"
     );
 
   } catch (err) {
@@ -80,7 +63,7 @@ const createTables = async () => {
   }
 };
 
-createTables();
+createTable();
 
 /* ======================================
    ADMIN LOGIN
@@ -120,145 +103,6 @@ app.post("/admin-login", async (req, res) => {
 });
 
 /* ======================================
-   USER SIGNUP
-====================================== */
-
-app.post("/signup", async (req, res) => {
-
-  try {
-
-    const {
-      name,
-      email,
-      password
-    } = req.body;
-
-    if (
-      !name ||
-      !email ||
-      !password
-    ) {
-
-      return res.status(400).json({
-        error: "All fields required"
-      });
-    }
-
-    /* CHECK EXISTING USER */
-
-    const existingUser =
-      await pool.query(
-        `
-        SELECT *
-        FROM users
-        WHERE email=$1
-        `,
-        [email]
-      );
-
-    if (
-      existingUser.rows.length > 0
-    ) {
-
-      return res.status(400).json({
-        error: "Email already exists"
-      });
-    }
-
-    /* INSERT USER */
-
-    const result =
-      await pool.query(
-        `
-        INSERT INTO users
-        (name,email,password)
-        VALUES ($1,$2,$3)
-        RETURNING id,name,email
-        `,
-        [
-          name,
-          email,
-          password
-        ]
-      );
-
-    res.json({
-      success: true,
-      user: result.rows[0]
-    });
-
-  } catch (err) {
-
-    console.error(
-      "❌ SIGNUP ERROR:",
-      err
-    );
-
-    res.status(500).json({
-      error: "Signup failed"
-    });
-  }
-});
-
-/* ======================================
-   USER LOGIN
-====================================== */
-
-app.post("/login", async (req, res) => {
-
-  try {
-
-    const {
-      email,
-      password
-    } = req.body;
-
-    const result =
-      await pool.query(
-        `
-        SELECT *
-        FROM users
-        WHERE email=$1
-        AND password=$2
-        `,
-        [
-          email,
-          password
-        ]
-      );
-
-    if (
-      result.rows.length === 0
-    ) {
-
-      return res.status(401).json({
-        error: "Invalid credentials"
-      });
-    }
-
-    res.json({
-      success: true,
-      user: {
-        id: result.rows[0].id,
-        name: result.rows[0].name,
-        email: result.rows[0].email
-      }
-    });
-
-  } catch (err) {
-
-    console.error(
-      "❌ LOGIN ERROR:",
-      err
-    );
-
-    res.status(500).json({
-      error: "Login failed"
-    });
-  }
-});
-
-/* ======================================
    GET USERS
 ====================================== */
 
@@ -276,10 +120,7 @@ app.get("/admin/users", async (req, res) => {
 
   } catch (err) {
 
-    console.error(
-      "❌ USERS ERROR:",
-      err
-    );
+    console.error(err);
 
     res.status(500).json({
       error: "Failed to load users",
