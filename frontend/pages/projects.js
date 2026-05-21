@@ -122,7 +122,7 @@ export default function ProjectsPage() {
               onClick={() => copyHTML(active.html)}
               style={{ padding: "12px 16px", color: "#fff", cursor: "pointer" }}
             >
-              Copy HTML
+              Copy 
             </div>
 
             <div
