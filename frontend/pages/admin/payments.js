@@ -111,6 +111,7 @@ export default function PaymentsPage() {
           >
             <tr>
               <th style={thStyle}>ID</th>
+              <th style={thStyle}>Name</th>
               <th style={thStyle}>Email</th>
               <th style={thStyle}>Plan</th>
               <th style={thStyle}>Status</th>
@@ -127,6 +128,11 @@ export default function PaymentsPage() {
                 <td style={tdStyle}>
                   {payment.id}
                 </td>
+
+                <td style={tdStyle}>
+                  {payment.name}
+                </td>
+
 
                 <td style={tdStyle}>
                   {payment.email}
