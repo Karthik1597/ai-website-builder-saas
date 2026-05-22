@@ -3,11 +3,13 @@ import { useRouter } from "next/router";
 
 export default function Users() {
   const router = useRouter();
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const adminLoggedIn = localStorage.getItem("adminLoggedIn");
+    const adminLoggedIn =
+      localStorage.getItem("adminLoggedIn");
 
     // 🔒 protect route
     if (!adminLoggedIn) {
@@ -24,12 +26,11 @@ export default function Users() {
 
         const data = await res.json();
 
-        console.log("USERS API RESPONSE:", data);
+        console.log("USERS:", data);
 
-        // ✅ backend returns ARRAY directly
         setUsers(data || []);
       } catch (err) {
-        console.error("Fetch users error:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -39,34 +40,146 @@ export default function Users() {
   }, []);
 
   return (
-    <div style={{ padding: "20px", color: "#fff" }}>
-      <h1>Users Page</h1>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#0f172a",
+        padding: "30px",
+        color: "#fff",
+      }}
+    >
+      <h1
+        style={{
+          fontSize: "32px",
+          marginBottom: "30px",
+        }}
+      >
+        Users Database
+      </h1>
 
-      {/* loading state */}
-      {loading && <p>Loading users...</p>}
-
-      {/* no users */}
-      {!loading && users.length === 0 && (
-        <p>No users found</p>
+      {/* Loading */}
+      {loading && (
+        <p style={{ color: "#94a3b8" }}>
+          Loading users...
+        </p>
       )}
 
-      {/* users list */}
-      {!loading &&
-        users.length > 0 &&
-        users.map((u, i) => (
-          <div
-            key={i}
+      {/* Empty */}
+      {!loading && users.length === 0 && (
+        <p style={{ color: "#94a3b8" }}>
+          No users found
+        </p>
+      )}
+
+      {/* Users Table */}
+      {!loading && users.length > 0 && (
+        <div
+          style={{
+            overflowX: "auto",
+            background: "#111827",
+            borderRadius: "16px",
+            padding: "20px",
+          }}
+        >
+          <table
             style={{
-              padding: "10px",
-              margin: "10px 0",
-              background: "#111827",
-              borderRadius: "10px",
+              width: "100%",
+              borderCollapse: "collapse",
             }}
           >
-            <p><b>Name:</b> {u.name}</p>
-            <p><b>Email:</b> {u.email}</p>
-          </div>
-        ))}
+            <thead>
+              <tr
+                style={{
+                  borderBottom:
+                    "1px solid #374151",
+                }}
+              >
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "14px",
+                  }}
+                >
+                  ID
+                </th>
+
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "14px",
+                  }}
+                >
+                  Name
+                </th>
+
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "14px",
+                  }}
+                >
+                  Email
+                </th>
+
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "14px",
+                  }}
+                >
+                  Created At
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {users.map((u) => (
+                <tr
+                  key={u.id}
+                  style={{
+                    borderBottom:
+                      "1px solid #1f2937",
+                  }}
+                >
+                  <td
+                    style={{
+                      padding: "14px",
+                    }}
+                  >
+                    {u.id}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: "14px",
+                    }}
+                  >
+                    {u.name}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: "14px",
+                    }}
+                  >
+                    {u.email}
+                  </td>
+
+                  <td
+                    style={{
+                      padding: "14px",
+                    }}
+                  >
+                    {new Date(
+                      u.created_at
+                    ).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
