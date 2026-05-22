@@ -1,136 +1,58 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
-export default function AdminLogin() {
+export default function Users() {
+  const router = useRouter();
+  const [users, setUsers] = useState([]);
 
-  const [username, setUsername] =
-    useState("");
+  useEffect(() => {
+    const adminLoggedIn = localStorage.getItem("adminLoggedIn");
 
-  const [password, setPassword] =
-    useState("");
+    // 🔒 protect route
+    if (!adminLoggedIn) {
+      router.push("/admin/login");
+      return;
+    }
 
-  const handleLogin = async () => {
-
-    try {
-
-      console.log("🔥 Login clicked");
-
-      const res = await fetch(
-        "https://ai-website-builder-saas.onrender.com/admin-login",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            username,
-            password,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      console.log("✅ RESPONSE:", data);
-
-      if (data.success) {
-
-        localStorage.setItem(
-          "adminLoggedIn",
-          "true"
+    // ✅ fetch users (replace API if needed)
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(
+          "https://ai-website-builder-saas.onrender.com/users"
         );
 
-        window.location.href =
-          "/admin/dashboard";
-
-      } else {
-
-        alert("Invalid login");
+        const data = await res.json();
+        setUsers(data.users || []);
+      } catch (err) {
+        console.error(err);
       }
+    };
 
-    } catch (err) {
-
-      console.error(err);
-
-      alert("Server error");
-    }
-  };
+    fetchUsers();
+  }, []);
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#0f172a",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
+    <div style={{ padding: "20px", color: "#fff" }}>
+      <h1>Users Page</h1>
 
-      <div
-        style={{
-          width: "400px",
-          padding: "40px",
-          background: "#111827",
-          borderRadius: "20px",
-        }}
-      >
-
-        <h1
-          style={{
-            color: "#fff",
-            marginBottom: "20px",
-          }}
-        >
-          Admin Login
-        </h1>
-
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) =>
-            setUsername(e.target.value)
-          }
-          style={{
-            width: "100%",
-            padding: "14px",
-            marginBottom: "20px",
-          }}
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) =>
-            setPassword(e.target.value)
-          }
-          style={{
-            width: "100%",
-            padding: "14px",
-            marginBottom: "20px",
-          }}
-        />
-
-        <button
-          onClick={handleLogin}
-          style={{
-            width: "100%",
-            padding: "14px",
-            background: "#6366f1",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer",
-            borderRadius: "10px",
-          }}
-        >
-          Login
-        </button>
-
-      </div>
-
+      {users.length === 0 ? (
+        <p>No users found</p>
+      ) : (
+        users.map((u, i) => (
+          <div
+            key={i}
+            style={{
+              padding: "10px",
+              margin: "10px 0",
+              background: "#111827",
+              borderRadius: "10px",
+            }}
+          >
+            <p>Name: {u.name}</p>
+            <p>Email: {u.email}</p>
+          </div>
+        ))
+      )}
     </div>
   );
 }
