@@ -64,8 +64,10 @@ export default function Navbar() {
 
     try {
 
-      const endpoint = isSignup ? "/api/signup" : "/api/login";
-
+     const endpoint = isSignup
+  ? `${process.env.NEXT_PUBLIC_API_URL}/signup`
+  : `${process.env.NEXT_PUBLIC_API_URL}/login`;
+  
       const res = await fetch(endpoint,{
         method:"POST",
         headers:{ "Content-Type":"application/json" },
