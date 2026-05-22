@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 export default function Users() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const adminLoggedIn = localStorage.getItem("adminLoggedIn");
@@ -14,17 +15,23 @@ export default function Users() {
       return;
     }
 
-    // ✅ fetch users (replace API if needed)
+    // ✅ fetch users
     const fetchUsers = async () => {
       try {
         const res = await fetch(
-          "https://ai-website-builder-saas.onrender.com/users"
+          "https://ai-website-builder-saas.onrender.com/admin/users"
         );
 
         const data = await res.json();
-        setUsers(data.users || []);
+
+        console.log("USERS API RESPONSE:", data);
+
+        // ✅ backend returns ARRAY directly
+        setUsers(data || []);
       } catch (err) {
-        console.error(err);
+        console.error("Fetch users error:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -35,9 +42,17 @@ export default function Users() {
     <div style={{ padding: "20px", color: "#fff" }}>
       <h1>Users Page</h1>
 
-      {users.length === 0 ? (
+      {/* loading state */}
+      {loading && <p>Loading users...</p>}
+
+      {/* no users */}
+      {!loading && users.length === 0 && (
         <p>No users found</p>
-      ) : (
+      )}
+
+      {/* users list */}
+      {!loading &&
+        users.length > 0 &&
         users.map((u, i) => (
           <div
             key={i}
@@ -48,11 +63,10 @@ export default function Users() {
               borderRadius: "10px",
             }}
           >
-            <p>Name: {u.name}</p>
-            <p>Email: {u.email}</p>
+            <p><b>Name:</b> {u.name}</p>
+            <p><b>Email:</b> {u.email}</p>
           </div>
-        ))
-      )}
+        ))}
     </div>
   );
 }
