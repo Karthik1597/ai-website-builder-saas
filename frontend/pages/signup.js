@@ -52,7 +52,7 @@ export default function Signup() {
         }
 
         const res = await fetch(
-          "/api/signup",
+          `${process.env.NEXT_PUBLIC_API_URL}/signup`,
           {
             method: "POST",
 
